@@ -13,11 +13,16 @@ class Voronoi {
   BST _t;
   DCEL _d;
   List<VoronoiSite> _sites;
+  List<Circle> circles;
+
+  double sweep = 0.0; //for drawing purposes
 
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
-  double get sweep => _q.isEmpty ? -1 : _q.peek.y;
   List<Vector2> get vertices => _d.vertices.map((_Vert v) => v.p).toList();
-  PQ<VoronoiEvent> get q => _q;
+  List<HalfEdge> get edges => _d.edges;
+
+  PQ<VoronoiEvent> get q => _q; //DEBUG
+  BST get t => _t; //DEBUG
 
   Voronoi(List<Vector2> pts, Rectangle box, {start : true}) {
 
@@ -26,6 +31,7 @@ class Voronoi {
     _t = new BST();
     _d = new DCEL();
     _sites = pts.map((Vector2 pt) => new VoronoiSite(pt)).toList();
+    circles = new List();
 
     // add each point to event queue based on y coord
     _sites.forEach((VoronoiSite s) => _q.push(new VoronoiSiteEvent(s)));
@@ -38,13 +44,12 @@ class Voronoi {
 
   void nextEvent() {
     if(_q.isNotEmpty) {
-      VoronoiEvent e = _q.pop();
-      if(e is VoronoiCircleEvent && e.isFalseAlarm) nextEvent();
-      else _handleEvent(e);
+      _handleEvent(_q.pop());
     }
   }
 
   void _handleEvent(VoronoiEvent e) {
+    sweep = e.y;
     if(e is VoronoiSiteEvent) _handleSiteEvent(e.s);
     else _handleCircleEvent(e);
   }
@@ -54,7 +59,7 @@ class Voronoi {
       _t.root = new BSTLeaf(s);
     } else {
       BSTLeaf closest = _t.search(s);
-      if(closest.event != null) closest.event.isFalseAlarm = true;
+      closest.event?.isFalseAlarm = true;
 
       // grow the tree
       BSTInternalNode newTree = new BSTInternalNode();
@@ -81,11 +86,14 @@ class Voronoi {
       }
 
       // update voronoi structure
-      _Edge e1 = new _Edge();
-      _Edge e2 = new _Edge();
+      HalfEdge e1 = new HalfEdge();
+      HalfEdge e2 = new HalfEdge();
       e1.twin = e2;
       newTree.edge = e1;
       newSubTree.edge = e2;
+
+      _d.edges.add(e1);
+      _d.edges.add(e2);
 
       // check new trips
       _checkTriple(leafL.leftLeaf, leafL, leafM);
@@ -107,7 +115,9 @@ class Voronoi {
       Vector2 o = new Vector2(sx, sy);
 
       // set the new event
-      VoronoiCircleEvent e = new VoronoiCircleEvent(new Circle(o, (a.pos - o).magnitude));
+      Circle cir = new Circle(o, (a.pos - o).magnitude);
+      circles.add(cir);
+      VoronoiCircleEvent e = new VoronoiCircleEvent(cir);
       _q.push(e);
       b.event = e;
       e.arc = b;
@@ -115,15 +125,41 @@ class Voronoi {
   }
 
   void _handleCircleEvent(VoronoiCircleEvent e) {
-    //DELETE ARC FROM BEACH LINE
+    //check for false alarm
+    if(e.isFalseAlarm) return;
 
-    e.arc.leftLeaf.event.isFalseAlarm = true;
-    e.arc.rightLeaf.event.isFalseAlarm = true;
-    _d.vertices.add(new _Vert(e.c.o));
+    e.arc.leftLeaf.event?.isFalseAlarm = true;
+    e.arc.rightLeaf.event?.isFalseAlarm = true;
 
-    _Edge e1 = new _Edge();
-    _Edge e2 = new _Edge();
+    _Vert v = new _Vert(e.c.o);
+    HalfEdge e1 = new HalfEdge();
+    HalfEdge e2 = new HalfEdge();
     e1.twin = e2;
+
+    e1.o = v;
+    e.arc.parent.edge.twin.o = v;
+    e.arc.parent.edge.next = e1;
+    e.arc.parent.parent.edge.o = v;
+    e.arc.parent.parent.edge.twin.next = e1;
+
+    e2.next = e.arc.parent.edge.twin;
+
+    _d.vertices.add(v);
+    _d.edges.add(e1);
+    _d.edges.add(e2);
+
+    BSTInternalNode n = new BSTInternalNode();
+    n.a = e.arc.leftLeaf.site;
+    n.b = e.arc.rightLeaf.site;
+    n.l = e.arc.uncle;
+    n.r = e.arc.brother;
+    n.edge = e1;
+
+    if(e.arc.parent.parent.parent.l == e.arc.parent.parent) {
+      e.arc.parent.parent.parent.l = n;
+    } else {
+      e.arc.parent.parent.parent.r = n;
+    }
   }
 
 }
@@ -163,6 +199,9 @@ class VoronoiSite {
   get y => pos.y;
 
   VoronoiSite(this.pos);
+
+  bool operator ==(Object other) => other is VoronoiSite && other.x == this.x &&
+                                                            other.y == this.y;
 
   String toString() {
     return "Voronoi site at ($x, $y)";

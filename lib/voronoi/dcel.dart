@@ -1,36 +1,49 @@
 part of voronoi;
 
 class DCEL {
-  List<_Edge> edges = new List();
-  List<_Face> faces = new List();
   List<_Vert> vertices = new List();
+  List<HalfEdge> edges = new List();
 
 }
 
-class _Edge {
+class HalfEdge {
   _Vert o; //origin
-  _Edge _twin;
+  HalfEdge _twin;
   _Face face;
-  _Edge next;
-  _Edge prev;
+  HalfEdge _next;
+  HalfEdge _prev;
 
-  _Edge get twin => _twin;
+  Vector2 get start => o?.p;
+  Vector2 get end => next?.o?.p;
+  HalfEdge get twin => _twin;
 
-  void set twin(_Edge t) {
+  HalfEdge get next => _next;
+  void set next(HalfEdge other) {
+    this._next = other;
+    other._prev = this;
+  }
+
+  HalfEdge get prev => _prev;
+  void set prev(HalfEdge other) {
+    this._prev = other;
+    other._next = this;
+  }
+
+  void set twin(HalfEdge t) {
     this._twin = t;
     t._twin = this;
   }
 }
 
 class _Face {
-  _Edge edge;
+  HalfEdge edge;
 
   _Face(this.edge);
 }
 
 class _Vert {
   Vector2 p;
-  _Edge e;
+  HalfEdge e;
 
   _Vert(this.p);
 }

@@ -39,8 +39,24 @@ abstract class BSTNode {
 
   bool get hasParent => this.parent != null;
 
+  BSTNode get brother {
+    if(hasParent) {
+      if(parent.r == this) return parent.l;
+      else return parent.r;
+    }
+    return null;
+  }
+
+  BSTNode get uncle {
+    if(parent?.hasParent) {
+      if(parent.parent.r == parent) return parent.parent.l;
+      else return parent.parent.r;
+    }
+    return null;
+  }
+
   BSTLeaf get leftLeaf {
-    if(hasParent ) {
+    if(hasParent) {
       if(parent.r == this) return parent.l.rightMostLeaf;
       else return parent.leftLeaf;
     }
@@ -60,7 +76,7 @@ abstract class BSTNode {
 class BSTInternalNode extends BSTNode {
   BSTNode _l, _r;
   VoronoiSite a, b; //site
-  _Edge edge;
+  HalfEdge edge;
 
   BSTNode get l => _l;
   BSTNode get r => _r;
