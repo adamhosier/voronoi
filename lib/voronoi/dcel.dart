@@ -32,5 +32,5 @@ class _Vert {
   Vector2 p;
   _Edge e;
 
-  _Vert(this.p, this.e);
+  _Vert(this.p);
 }

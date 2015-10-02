@@ -16,6 +16,7 @@ class Voronoi {
 
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
   double get sweep => _q.isEmpty ? -1 : _q.peek.y;
+  List<Vector2> get vertices => _d.vertices.map((_Vert v) => v.p).toList();
   PQ<VoronoiEvent> get q => _q;
 
   Voronoi(List<Vector2> pts, Rectangle box, {start : true}) {
@@ -45,7 +46,7 @@ class Voronoi {
 
   void _handleEvent(VoronoiEvent e) {
     if(e is VoronoiSiteEvent) _handleSiteEvent(e.s);
-    else _handleCircleEvent(e.y);
+    else _handleCircleEvent(e);
   }
 
   void _handleSiteEvent(VoronoiSite s) {
@@ -108,12 +109,21 @@ class Voronoi {
       // set the new event
       VoronoiCircleEvent e = new VoronoiCircleEvent(new Circle(o, (a.pos - o).magnitude));
       _q.push(e);
-      a.event = e;
+      b.event = e;
+      e.arc = b;
     }
   }
 
-  void _handleCircleEvent(double y) {
+  void _handleCircleEvent(VoronoiCircleEvent e) {
+    //DELETE ARC FROM BEACH LINE
 
+    e.arc.leftLeaf.event.isFalseAlarm = true;
+    e.arc.rightLeaf.event.isFalseAlarm = true;
+    _d.vertices.add(new _Vert(e.c.o));
+
+    _Edge e1 = new _Edge();
+    _Edge e2 = new _Edge();
+    e1.twin = e2;
   }
 
 }
@@ -138,6 +148,7 @@ class VoronoiSiteEvent extends VoronoiEvent {
 
 class VoronoiCircleEvent extends VoronoiEvent {
   Circle c;
+  BSTLeaf arc;
   bool isFalseAlarm = false;
 
   double get y => c.bottom;
