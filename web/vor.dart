@@ -47,6 +47,8 @@ List<Vector2> getPoints(int amt, [int seed]) {
 draw(Voronoi v) {
   ctx.clearRect(0, 0, c.width, c.height);
 
+  print(v.q.toList());
+
   //sites
   ctx.fillStyle = "#000";
   v.sites.forEach((Vector2 p) {

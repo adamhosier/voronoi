@@ -56,8 +56,8 @@ class Voronoi {
       // grow the tree
       BSTInternalNode newTree = new BSTInternalNode();
       BSTInternalNode newSubTree = new BSTInternalNode();
-      BSTLeaf leafL = new BSTLeaf(s);
-      BSTLeaf leafM = closest.clone();
+      BSTLeaf leafL = closest.clone();
+      BSTLeaf leafM = new BSTLeaf(s);
       BSTLeaf leafR = closest.clone();
 
       newTree.l = leafL;
@@ -84,11 +84,15 @@ class Voronoi {
       newTree.edge = e1;
       newSubTree.edge = e2;
 
-      _checkTriple(_sites[0], _sites[1], _sites[2]);
+      // check new trips
+      _checkTriple(leafL.leftLeaf, leafL, leafM);  //TODO: replace _checkTRiple with VoronoiSite inputs and use
+      _checkTriple(leafM, leafR, leafR.rightLeaf); //      null awarness in these calls
     }
   }
 
-  void _checkTriple(VoronoiSite a, VoronoiSite b, VoronoiSite c) {
+  void _checkTriple(BSTLeaf a, BSTLeaf b, BSTLeaf c) {
+    if(a == null || b == null || c == null) return;
+
     double syden = 2 * ((a.y - b.y) * (b.x - c.x) - (b.y - c.y) * (a.x - b.x));
     if(syden > 0) { //if the circle converges
       // calculate intersection

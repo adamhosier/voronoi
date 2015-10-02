@@ -32,7 +32,29 @@ class BST {
 }
 
 abstract class BSTNode {
-  BSTNode parent;
+  BSTInternalNode parent;
+
+  BSTLeaf get leftMostLeaf;
+  BSTLeaf get rightMostLeaf;
+
+  bool get hasParent => this.parent != null;
+
+  BSTLeaf get leftLeaf {
+    if(hasParent ) {
+      if(parent.r == this) return parent.l.rightMostLeaf;
+      else return parent.leftLeaf;
+    }
+    return null;
+  }
+
+  BSTLeaf get rightLeaf {
+    if(hasParent) {
+      if (parent.l == this) return parent.r.leftMostLeaf;
+      else return parent.rightLeaf;
+    }
+    return null;
+  }
+
 }
 
 class BSTInternalNode extends BSTNode {
@@ -42,6 +64,9 @@ class BSTInternalNode extends BSTNode {
 
   BSTNode get l => _l;
   BSTNode get r => _r;
+
+  BSTLeaf get leftMostLeaf => l.leftMostLeaf;
+  BSTLeaf get rightMostLeaf => r.rightMostLeaf;
 
   void set l(BSTNode n) {
     n.parent = this;
@@ -53,11 +78,19 @@ class BSTInternalNode extends BSTNode {
     this._r = n;
   }
 
+
 }
 
 class BSTLeaf extends BSTNode {
   BSTInternalNode parent;
   VoronoiSite site;
+
+  double get x => site.x;
+  double get y => site.y;
+  Vector2 get pos => new Vector2(x, y);
+
+  BSTLeaf get leftMostLeaf => this;
+  BSTLeaf get rightMostLeaf => this;
 
   BSTLeaf(this.site);
 
