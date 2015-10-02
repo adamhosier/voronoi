@@ -31,13 +31,15 @@ class Voronoi {
 
     // start processing events
     while(_q.isNotEmpty && start) {
-      _handleEvent(_q.pop());
+      nextEvent();
     }
   }
 
   void nextEvent() {
     if(_q.isNotEmpty) {
-      _handleEvent(_q.pop());
+      VoronoiEvent e = _q.pop();
+      if(e is VoronoiCircleEvent && e.isFalseAlarm) nextEvent();
+      else _handleEvent(e);
     }
   }
 
@@ -51,7 +53,7 @@ class Voronoi {
       _t.root = new BSTLeaf(s);
     } else {
       BSTLeaf closest = _t.search(s);
-      //if closest has a pointer to a circle event in q, delete it from q
+      if(closest.event != null) closest.event.isFalseAlarm = true;
 
       // grow the tree
       BSTInternalNode newTree = new BSTInternalNode();
@@ -85,8 +87,8 @@ class Voronoi {
       newSubTree.edge = e2;
 
       // check new trips
-      _checkTriple(leafL.leftLeaf, leafL, leafM);  //TODO: replace _checkTRiple with VoronoiSite inputs and use
-      _checkTriple(leafM, leafR, leafR.rightLeaf); //      null awarness in these calls
+      _checkTriple(leafL.leftLeaf, leafL, leafM);
+      _checkTriple(leafM, leafR, leafR.rightLeaf);
     }
   }
 
@@ -102,8 +104,11 @@ class Voronoi {
       double sx = ((pow(c.x, 2) + pow(c.y, 2) - pow(b.x, 2) - pow(b.y, 2)) * (a.y - b.y) -
                    (pow(b.x, 2) + pow(b.y, 2) - pow(a.x, 2) - pow(a.y, 2)) * (b.y - c.y)) / -syden;
       Vector2 o = new Vector2(sx, sy);
-      Circle cir = new Circle(o, (a.pos - o).magnitude);
-      _q.push(new VoronoiCircleEvent(cir));
+
+      // set the new event
+      VoronoiCircleEvent e = new VoronoiCircleEvent(new Circle(o, (a.pos - o).magnitude));
+      _q.push(e);
+      a.event = e;
     }
   }
 
@@ -133,6 +138,7 @@ class VoronoiSiteEvent extends VoronoiEvent {
 
 class VoronoiCircleEvent extends VoronoiEvent {
   Circle c;
+  bool isFalseAlarm = false;
 
   double get y => c.bottom;
 

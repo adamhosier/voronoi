@@ -84,6 +84,7 @@ class BSTInternalNode extends BSTNode {
 class BSTLeaf extends BSTNode {
   BSTInternalNode parent;
   VoronoiSite site;
+  VoronoiCircleEvent event;
 
   double get x => site.x;
   double get y => site.y;
