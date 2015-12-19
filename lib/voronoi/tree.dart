@@ -8,6 +8,12 @@ class BST {
   bool get isEmpty => root == null;
   bool get isNotEmpty => !isEmpty;
 
+  getBreakpoints(double y) {
+    List<Vector2> result = new List();
+    _findBreakpoints(root, y, result);
+    return result;
+  }
+
   BSTLeaf search(VoronoiSite s) {
     return _search(root, s);
   }
@@ -16,7 +22,7 @@ class BST {
     if(node is BSTLeaf) {
       return node;
     } else if (node is BSTInternalNode){
-      double x = _findBreakpoint(node.a, node.b, s.y);
+      double x = _findBreakpoint(node.a, node.b, s.y).x;
       if(s.x < x) {
         return _search(node.l, s);
       } else {
@@ -26,9 +32,36 @@ class BST {
     return null;
   }
 
-  double _findBreakpoint(VoronoiSite a, VoronoiSite b, double y) {
-    return (a.y * b.x - sqrt(a.y * b.y * pow(a.y - b.y, 2) + pow(b.x, 2))) / (a.y - b.y);
+  Vector2 _findBreakpoint(VoronoiSite aSite, VoronoiSite bSite, double sweep) {
+    // transform into new plane
+    Vector2 a = new Vector2(0.0, sweep - aSite.y);
+    Vector2 b = new Vector2(bSite.x - aSite.x, sweep - bSite.y);
+
+    // if point lies on sweep line
+    if(b.y == 0) return new Vector2(bSite.x, sweep);
+    if(a.y == 0) return new Vector2(aSite.x, sweep);
+
+    // calculate intersection
+    double na = b.y - a.y;
+    double nb = 2.0*b.x*a.y;
+    double nc = a.y * b.y * (a.y - b.y) - b.x * b.x * a.y;
+    Vector2 result = new Vector2((-nb + sqrt(nb*nb - 4.0*na*nc)) / (2.0*na), 0.0);
+
+    // transform back
+    return result + new Vector2(aSite.x, sweep);
   }
+
+  List<Vector2> _findBreakpoints(BSTNode node, double y, List<Vector2> result) {
+    if(node is BSTInternalNode) {
+      _findBreakpoints(node.l, y, result);
+
+      result.add(_findBreakpoint(node.a, node.b, y));
+
+      _findBreakpoints(node.r, y, result);
+    }
+    return result;
+  }
+
 }
 
 abstract class BSTNode {
@@ -75,7 +108,7 @@ abstract class BSTNode {
 
 class BSTInternalNode extends BSTNode {
   BSTNode _l, _r;
-  VoronoiSite a, b; //site
+  VoronoiSite a, b;
   HalfEdge edge;
 
   BSTNode get l => _l;
@@ -94,7 +127,6 @@ class BSTInternalNode extends BSTNode {
     this._r = n;
   }
 
-
 }
 
 class BSTLeaf extends BSTNode {
@@ -105,6 +137,7 @@ class BSTLeaf extends BSTNode {
   double get x => site.x;
   double get y => site.y;
   Vector2 get pos => new Vector2(x, y);
+  boolean get hasEvent => event == null;
 
   BSTLeaf get leftMostLeaf => this;
   BSTLeaf get rightMostLeaf => this;
@@ -114,6 +147,7 @@ class BSTLeaf extends BSTNode {
   BSTLeaf clone() {
     BSTLeaf newLeaf = new BSTLeaf(this.site);
     newLeaf.parent = parent;
+    newLeaf.event = event;
     return newLeaf;
   }
 }

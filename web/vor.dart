@@ -20,8 +20,8 @@ main() {
   c.width = window.innerWidth;
   c.height = window.innerHeight;
 
-  int NUM_POINTS = 10;
-  v = new Voronoi(getPoints(NUM_POINTS), c.getBoundingClientRect(), start:false);
+  int NUM_POINTS = 6;
+  v = new Voronoi(getPoints(NUM_POINTS, 1232), c.getBoundingClientRect(), start:false);
   draw(v);
 
   window.onKeyDown.listen((KeyboardEvent e) {
@@ -42,8 +42,7 @@ List<Vector2> getPoints(int amt, [int seed]) {
 
   Rectangle b = new Rectangle(200, 200, 400, 400);
   for(int i = 0; i < amt; i++) {
-    pts.add(new Vector2(b.left + rng.nextDouble() * b.width,
-                        b.top + rng.nextDouble() * b.height));
+    pts.add(new Vector2(b.left + rng.nextDouble() * b.width, b.top + rng.nextDouble() * b.height));
   }
 
   return pts;
@@ -69,6 +68,7 @@ draw(Voronoi v) {
     ctx.arc(p.x, p.y, 2, 0, 2*PI);
     ctx.fill();
 
+    //arcs
     if(p.y <= v.sweep) {
       double xdist = sqrt(v.sweep * v.sweep - p.y * p.y);
       ctx.beginPath();
@@ -76,6 +76,16 @@ draw(Voronoi v) {
       ctx.quadraticCurveTo(p.x, p.y + v.sweep, p.x + xdist, 0);
       ctx.stroke();
     }
+  });
+
+  //beach line intersections
+  ctx.strokeStyle = "#F00";
+  print("");
+  v.beachBreakpoints.forEach((Vector2 p) {
+    print(p);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, 2*PI);
+    ctx.stroke();
   });
 
   //sweep line

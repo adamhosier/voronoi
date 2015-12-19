@@ -20,6 +20,7 @@ class Voronoi {
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
   List<Vector2> get vertices => _d.vertices.map((_Vert v) => v.p).toList();
   List<HalfEdge> get edges => _d.edges;
+  List<Vector2> get beachBreakpoints => _t.getBreakpoints(sweep);
 
   PQ<VoronoiEvent> get q => _q; //DEBUG
   BST get t => _t; //DEBUG
@@ -59,6 +60,8 @@ class Voronoi {
       _t.root = new BSTLeaf(s);
     } else {
       BSTLeaf closest = _t.search(s);
+
+      // if circle has an event, mark it as a false alarm
       closest.event?.isFalseAlarm = true;
 
       // grow the tree
@@ -128,8 +131,10 @@ class Voronoi {
     //check for false alarm
     if(e.isFalseAlarm) return;
 
-    e.arc.leftLeaf.event?.isFalseAlarm = true;
-    e.arc.rightLeaf.event?.isFalseAlarm = true;
+    BSTLeaf leaf = e.arc;
+
+    leaf.leftLeaf.event?.isFalseAlarm = true;
+    leaf.rightLeaf.event?.isFalseAlarm = true;
 
     _Vert v = new _Vert(e.c.o);
     HalfEdge e1 = new HalfEdge();
@@ -137,28 +142,28 @@ class Voronoi {
     e1.twin = e2;
 
     e1.o = v;
-    e.arc.parent.edge.twin.o = v;
-    e.arc.parent.edge.next = e1;
-    e.arc.parent.parent.edge.o = v;
-    e.arc.parent.parent.edge.twin.next = e1;
+    leaf.parent.edge.twin.o = v;
+    leaf.parent.edge.next = e1;
+    leaf.parent.parent.edge.o = v;
+    leaf.parent.parent.edge.twin.next = e1;
 
-    e2.next = e.arc.parent.edge.twin;
+    e2.next = leaf.parent.edge.twin;
 
     _d.vertices.add(v);
     _d.edges.add(e1);
     _d.edges.add(e2);
 
     BSTInternalNode n = new BSTInternalNode();
-    n.a = e.arc.leftLeaf.site;
-    n.b = e.arc.rightLeaf.site;
-    n.l = e.arc.uncle;
-    n.r = e.arc.brother;
+    n.a = leaf.leftLeaf.site;
+    n.b = leaf.rightLeaf.site;
+    n.l = leaf.uncle;
+    n.r = leaf.brother;
     n.edge = e1;
 
-    if(e.arc.parent.parent.parent.l == e.arc.parent.parent) {
-      e.arc.parent.parent.parent.l = n;
+    if(leaf.parent.parent.parent.l == leaf.parent.parent) {
+      leaf.parent.parent.parent.l = n;
     } else {
-      e.arc.parent.parent.parent.r = n;
+      leaf.parent.parent.parent.r = n;
     }
   }
 
