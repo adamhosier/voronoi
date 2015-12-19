@@ -52,7 +52,7 @@ class Voronoi {
   void _handleEvent(VoronoiEvent e) {
     sweep = e.y;
     if(e is VoronoiSiteEvent) _handleSiteEvent(e.s);
-    else _handleCircleEvent(e);
+    else if(e is VoronoiCircleEvent) _handleCircleEvent(e);
   }
 
   void _handleSiteEvent(VoronoiSite s) {
@@ -62,7 +62,10 @@ class Voronoi {
       BSTLeaf closest = _t.search(s);
 
       // if circle has an event, mark it as a false alarm
-      closest.event?.isFalseAlarm = true;
+      if(closest.event != null) {
+        closest.event.isFalseAlarm = true;
+        circles.remove(closest.event.c);
+      }
 
       // grow the tree
       BSTInternalNode newTree = new BSTInternalNode();
@@ -104,38 +107,18 @@ class Voronoi {
     }
   }
 
-  void _checkTriple(BSTLeaf a, BSTLeaf b, BSTLeaf c) {
-    if(a == null || b == null || c == null) return;
-
-    double syden = 2 * ((a.y - b.y) * (b.x - c.x) - (b.y - c.y) * (a.x - b.x));
-    if(syden > 0) { //if the circle converges
-      // calculate intersection
-      double synum = (pow(c.x, 2) + pow(c.y, 2) - pow(b.x, 2) - pow(b.y, 2)) * (a.x - b.x) -
-                     (pow(b.x, 2) + pow(b.y, 2) - pow(a.x, 2) - pow(a.y, 2)) * (b.x - c.x);
-      double sy = synum / syden;
-      double sx = ((pow(c.x, 2) + pow(c.y, 2) - pow(b.x, 2) - pow(b.y, 2)) * (a.y - b.y) -
-                   (pow(b.x, 2) + pow(b.y, 2) - pow(a.x, 2) - pow(a.y, 2)) * (b.y - c.y)) / -syden;
-      Vector2 o = new Vector2(sx, sy);
-
-      // set the new event
-      Circle cir = new Circle(o, (a.pos - o).magnitude);
-      circles.add(cir);
-      VoronoiCircleEvent e = new VoronoiCircleEvent(cir);
-      _q.push(e);
-      b.event = e;
-      e.arc = b;
-    }
-  }
-
   void _handleCircleEvent(VoronoiCircleEvent e) {
     //check for false alarm
-    if(e.isFalseAlarm) return;
+    if(e.isFalseAlarm) {
+      return;
+    }
 
     BSTLeaf leaf = e.arc;
 
     leaf.leftLeaf.event?.isFalseAlarm = true;
     leaf.rightLeaf.event?.isFalseAlarm = true;
 
+    // diagram
     _Vert v = new _Vert(e.c.o);
     HalfEdge e1 = new HalfEdge();
     HalfEdge e2 = new HalfEdge();
@@ -153,22 +136,50 @@ class Voronoi {
     _d.edges.add(e1);
     _d.edges.add(e2);
 
+    // beach line
+
+    BSTInternalNode top = leaf.leftLeaf.parent.parent;
     BSTInternalNode n = new BSTInternalNode();
-    n.a = leaf.leftLeaf.site;
-    n.b = leaf.rightLeaf.site;
     n.l = leaf.uncle;
     n.r = leaf.brother;
+    n.a = leaf.leftLeaf.site;
+    n.b = leaf.rightLeaf.site;
     n.edge = e1;
 
-    if(leaf.parent.parent.parent.l == leaf.parent.parent) {
-      leaf.parent.parent.parent.l = n;
+    // NOT ALWAYS THIS
+    if(top == null) {
+      _t.root = n;
+    } else if(top.l == top) {
+      top.l = n;
     } else {
-      leaf.parent.parent.parent.r = n;
+      top.r = n;
     }
+
+    _checkTriple(n.leftLeaf?.leftLeaf, leaf.leftLeaf, leaf.rightLeaf);
+    _checkTriple(n.leftLeaf, leaf.rightLeaf, leaf.rightLeaf?.rightLeaf);
   }
 
-}
+  void _checkTriple(BSTLeaf a, BSTLeaf b, BSTLeaf c) {
+    if(a == null || b == null || c == null) return;
 
+    double syden = 2 * ((a.y - b.y)*(b.x - c.x) - (b.y - c.y)*(a.x - b.x));
+    if(syden < 0) { //if the circle converges
+      // calculate intersection
+      double synum = (c.x*c.x + c.y*c.y - b.x*b.x - b.y*b.y)*(a.x - b.x) - (b.x*b.x + b.y*b.y - a.x*a.x - a.y*a.y)*(b.x - c.x);
+      double sy = synum / syden;
+      double sx = ((c.x*c.x + c.y*c.y - b.x*b.x - b.y*b.y)*(a.y - b.y) - (b.x*b.x + b.y*b.y - a.x*a.x - a.y*a.y)*(b.y - c.y)) / -syden;
+      Vector2 o = new Vector2(sx, sy);
+
+      // set the new event
+      Circle cir = new Circle(o, (a.pos - o).magnitude);
+      circles.add(cir);
+      VoronoiCircleEvent e = new VoronoiCircleEvent(cir);
+      _q.push(e);
+      b.event = e;
+      e.arc = b;
+    }
+  }
+}
 
 abstract class VoronoiEvent implements Comparable {
   double get y;
@@ -195,6 +206,12 @@ class VoronoiCircleEvent extends VoronoiEvent {
   double get y => c.bottom;
 
   VoronoiCircleEvent(this.c);
+}
+
+class VoronoiNullEvent extends VoronoiEvent {
+  double y;
+
+  VoronoiNullEvent(this.y);
 }
 
 class VoronoiSite {

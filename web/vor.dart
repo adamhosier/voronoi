@@ -20,8 +20,8 @@ main() {
   c.width = window.innerWidth;
   c.height = window.innerHeight;
 
-  int NUM_POINTS = 6;
-  v = new Voronoi(getPoints(NUM_POINTS, 1232), c.getBoundingClientRect(), start:false);
+  int NUM_POINTS = 5;
+  v = new Voronoi(getPoints(NUM_POINTS, 43), c.getBoundingClientRect(), start:false);
   draw(v);
 
   window.onKeyDown.listen((KeyboardEvent e) {
@@ -30,6 +30,11 @@ main() {
         v.nextEvent();
         draw(v);
       }
+    }
+    if(e.keyCode == 83) {
+      v.q.push(new VoronoiNullEvent(v.sweep + 10));
+      v.nextEvent();
+      draw(v);
     }
   });
 
@@ -80,11 +85,10 @@ draw(Voronoi v) {
 
   //beach line intersections
   ctx.strokeStyle = "#F00";
-  print("");
   v.beachBreakpoints.forEach((Vector2 p) {
-    print(p);
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 5, 0, 2*PI);
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x, p.y - 3);
     ctx.stroke();
   });
 
