@@ -21,7 +21,7 @@ main() {
   c.height = window.innerHeight;
 
   int NUM_POINTS = 5;
-  v = new Voronoi(getPoints(NUM_POINTS, 43), c.getBoundingClientRect(), start:false);
+  v = new Voronoi(getPoints(NUM_POINTS, 431), c.getBoundingClientRect(), start:false);
   draw(v);
 
   window.onKeyDown.listen((KeyboardEvent e) {

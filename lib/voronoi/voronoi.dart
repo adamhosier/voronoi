@@ -22,8 +22,8 @@ class Voronoi {
   List<HalfEdge> get edges => _d.edges;
   List<Vector2> get beachBreakpoints => _t.getBreakpoints(sweep);
 
-  PQ<VoronoiEvent> get q => _q; //DEBUG
-  BST get t => _t; //DEBUG
+  PQ<VoronoiEvent> get q => _q;
+  BST get t => _t;
 
   Voronoi(List<Vector2> pts, Rectangle box, {start : true}) {
 
@@ -114,9 +114,7 @@ class Voronoi {
     }
 
     BSTLeaf leaf = e.arc;
-
-    leaf.leftLeaf.event?.isFalseAlarm = true;
-    leaf.rightLeaf.event?.isFalseAlarm = true;
+    BSTInternalNode oldIntersection = leaf.parent;
 
     // diagram
     _Vert v = new _Vert(e.c.o);
@@ -125,38 +123,35 @@ class Voronoi {
     e1.twin = e2;
 
     e1.o = v;
-    leaf.parent.edge.twin.o = v;
-    leaf.parent.edge.next = e1;
-    leaf.parent.parent.edge.o = v;
-    leaf.parent.parent.edge.twin.next = e1;
+    oldIntersection.edge.twin.o = v;
+    oldIntersection.edge.next = e1;
+    oldIntersection.parent.edge.o = v;
+    oldIntersection.parent.edge.twin.next = e1;
 
-    e2.next = leaf.parent.edge.twin;
+    e2.next = oldIntersection.edge.twin;
 
     _d.vertices.add(v);
     _d.edges.add(e1);
     _d.edges.add(e2);
 
-    // beach line
+    // events
+    BSTLeaf leafL = leaf.leftLeaf;
+    BSTLeaf leafR = leaf.rightLeaf;
+    leafL.event?.isFalseAlarm = true;
+    leafR.event?.isFalseAlarm = true;
 
-    BSTInternalNode top = leaf.leftLeaf.parent.parent;
+    // remove intersection node
     BSTInternalNode n = new BSTInternalNode();
-    n.l = leaf.uncle;
-    n.r = leaf.brother;
-    n.a = leaf.leftLeaf.site;
-    n.b = leaf.rightLeaf.site;
-    n.edge = e1;
-
-    // NOT ALWAYS THIS
-    if(top == null) {
-      _t.root = n;
-    } else if(top.l == top) {
-      top.l = n;
+    if(oldIntersection.parent.l == oldIntersection) {
+      oldIntersection.parent.l = leaf.brother;
     } else {
-      top.r = n;
+      oldIntersection.parent.r = leaf.brother;
     }
+    leafL.parent.b = leafL.rightLeaf.site;
+    //leafR.parent.a = leafR.leftLeaf.site;
 
-    _checkTriple(n.leftLeaf?.leftLeaf, leaf.leftLeaf, leaf.rightLeaf);
-    _checkTriple(n.leftLeaf, leaf.rightLeaf, leaf.rightLeaf?.rightLeaf);
+    _checkTriple(n.leftLeaf?.leftLeaf, leafL, leafR);
+    _checkTriple(n.leftLeaf, leafR, leafR?.rightLeaf);
   }
 
   void _checkTriple(BSTLeaf a, BSTLeaf b, BSTLeaf c) {
