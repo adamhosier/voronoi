@@ -64,10 +64,7 @@ class Voronoi {
       BSTLeaf closest = _t.search(s);
 
       // if circle has an event, mark it as a false alarm
-      if(closest.event != null) {
-        closest.event.isFalseAlarm = true;
-        circles.remove(closest.event.c);
-      }
+      _checkFalseAlarm(closest);
 
       // grow the tree
       BSTInternalNode newTree = new BSTInternalNode();
@@ -121,8 +118,8 @@ class Voronoi {
     // events
     BSTLeaf leafL = leaf.leftLeaf;
     BSTLeaf leafR = leaf.rightLeaf;
-    leafL.event?.isFalseAlarm = true;
-    leafR.event?.isFalseAlarm = true;
+    _checkFalseAlarm(leafL);
+    _checkFalseAlarm(leafR);
 
     // remove intersection node
     BSTInternalNode n = new BSTInternalNode();
@@ -151,8 +148,15 @@ class Voronoi {
     _d.edges.add(e1);
     _d.edges.add(e2);
 
-    _checkTriple(n.leftLeaf?.leftLeaf, leafL, leafR);
-    _checkTriple(n.leftLeaf, leafR, leafR?.rightLeaf);
+    _checkTriple(leafL.leftLeaf, leafL, leafL.rightLeaf);
+    _checkTriple(leafR.leftLeaf, leafR, leafR.rightLeaf);
+  }
+
+  void _checkFalseAlarm(BSTLeaf leaf) {
+    if(leaf.event != null) {
+      leaf.event.isFalseAlarm = true;
+      circles.remove(leaf.event.c);
+    }
   }
 
   void _checkTriple(BSTLeaf a, BSTLeaf b, BSTLeaf c) {

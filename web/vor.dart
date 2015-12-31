@@ -20,7 +20,7 @@ main() {
   c.width = window.innerWidth;
   c.height = window.innerHeight;
 
-  int NUM_POINTS = 500;
+  int NUM_POINTS = 10;
   v = new Voronoi(getPoints(NUM_POINTS, 2271), c.getBoundingClientRect(), start:false);
   draw(v);
 
@@ -59,7 +59,7 @@ draw(Voronoi v) {
   ctx.clearRect(0, 0, c.width, c.height);
 
   //circles
-  ctx.strokeStyle = "#ACA";
+  ctx.strokeStyle = "#BDB";
   ctx.lineWidth = 1;
   v.circles.forEach((Circle c) {
     ctx.beginPath();
