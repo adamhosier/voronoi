@@ -9,6 +9,8 @@ part "tree.dart";
 
 class Voronoi {
 
+  static double Epsilon = 0.0000001;
+
   PQ<VoronoiEvent> _q;
   BST _t;
   DCEL _d;
@@ -78,10 +80,10 @@ class Voronoi {
       newTree.r = newSubTree;
       newTree.a = closest.site;
       newTree.b = s;
-      newSubTree.a = s;
-      newSubTree.b = closest.site;
       newSubTree.l = leafM;
       newSubTree.r = leafR;
+      newSubTree.a = s;
+      newSubTree.b = closest.site;
 
       if(closest.parent == null) {
         _t.root = newTree;
@@ -116,6 +118,21 @@ class Voronoi {
     BSTLeaf leaf = e.arc;
     BSTInternalNode oldIntersection = leaf.parent;
 
+    // events
+    BSTLeaf leafL = leaf.leftLeaf;
+    BSTLeaf leafR = leaf.rightLeaf;
+    leafL.event?.isFalseAlarm = true;
+    leafR.event?.isFalseAlarm = true;
+
+    // remove intersection node
+    BSTInternalNode n = new BSTInternalNode();
+    if(oldIntersection.parent.l == oldIntersection) {
+      oldIntersection.parent.l = leaf.brother;
+    } else {
+      oldIntersection.parent.r = leaf.brother;
+    }
+    _t.fix(e.c.o, e.y);
+
     // diagram
     _Vert v = new _Vert(e.c.o);
     HalfEdge e1 = new HalfEdge();
@@ -133,22 +150,6 @@ class Voronoi {
     _d.vertices.add(v);
     _d.edges.add(e1);
     _d.edges.add(e2);
-
-    // events
-    BSTLeaf leafL = leaf.leftLeaf;
-    BSTLeaf leafR = leaf.rightLeaf;
-    leafL.event?.isFalseAlarm = true;
-    leafR.event?.isFalseAlarm = true;
-
-    // remove intersection node
-    BSTInternalNode n = new BSTInternalNode();
-    if(oldIntersection.parent.l == oldIntersection) {
-      oldIntersection.parent.l = leaf.brother;
-    } else {
-      oldIntersection.parent.r = leaf.brother;
-    }
-    leafL.parent.b = leafL.rightLeaf.site;
-    //leafR.parent.a = leafR.leftLeaf.site;
 
     _checkTriple(n.leftLeaf?.leftLeaf, leafL, leafR);
     _checkTriple(n.leftLeaf, leafR, leafR?.rightLeaf);

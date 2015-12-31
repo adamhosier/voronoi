@@ -9,9 +9,7 @@ class BST {
   bool get isNotEmpty => !isEmpty;
 
   getBreakpoints(double y) {
-    List<Vector2> result = new List();
-    _findBreakpoints(root, y, result);
-    return result;
+    return _findBreakpoints(root, y, []);
   }
 
   BSTLeaf search(VoronoiSite s) {
@@ -30,6 +28,30 @@ class BST {
       }
     }
     return null;
+  }
+
+  void fix(Vector2 v, double sweep) {
+    print("Fixing " + v.x.toString());
+    _fix(root, v, sweep);
+  }
+
+  void _fix(BSTNode node, Vector2 v, double sweep) {
+    if(node is BSTInternalNode) {
+      double x = _findBreakpoint(node.a, node.b, sweep).x;
+      double diff = v.x - x;
+      if(diff < -Voronoi.Epsilon) {
+        print("Going left");
+        _fix(node.l, v, sweep);
+      } else if(diff.abs() < Voronoi.Epsilon) {
+        print("Bingo");
+        node.a = node.l.rightMostLeaf.site;
+        node.b = node.r.leftMostLeaf.site;
+      } else {
+        print("Going right");
+        _fix(node.r, v, sweep);
+      }
+    }
+    print("Leaf");
   }
 
   Vector2 _findBreakpoint(VoronoiSite aSite, VoronoiSite bSite, double sweep) {
@@ -51,6 +73,7 @@ class BST {
     return result + new Vector2(aSite.x, sweep);
   }
 
+  // n sq time - try not to use this when not debugging
   List<Vector2> _findBreakpoints(BSTNode node, double y, List<Vector2> result) {
     if(node is BSTInternalNode) {
       _findBreakpoints(node.l, y, result);

@@ -20,8 +20,8 @@ main() {
   c.width = window.innerWidth;
   c.height = window.innerHeight;
 
-  int NUM_POINTS = 5;
-  v = new Voronoi(getPoints(NUM_POINTS, 431), c.getBoundingClientRect(), start:false);
+  int NUM_POINTS = 500;
+  v = new Voronoi(getPoints(NUM_POINTS, 2271), c.getBoundingClientRect(), start:false);
   draw(v);
 
   window.onKeyDown.listen((KeyboardEvent e) {
@@ -32,7 +32,9 @@ main() {
       }
     }
     if(e.keyCode == 83) {
-      v.q.push(new VoronoiNullEvent(v.sweep + 10));
+      if(v.q.isEmpty || v.q.peek.y > v.sweep + 1) {
+        v.q.push(new VoronoiNullEvent(v.sweep + 1));
+      }
       v.nextEvent();
       draw(v);
     }
@@ -41,11 +43,11 @@ main() {
 }
 
 List<Vector2> getPoints(int amt, [int seed]) {
-  //return [new Vector2(500.0, 500.0), new Vector2(450.0, 550.0), new Vector2(525.0, 575.0), new Vector2(460.0, 650.0), new Vector2(600.0, 660.0)];
+  //return [new Vector2(200.0, 200.0), new Vector2(150.0, 250.0), new Vector2(225.0, 275.0), new Vector2(160.0, 350.0), new Vector2(300.0, 360.0)];
   List<Vector2> pts = new List();
   Random rng = new Random(seed);
 
-  Rectangle b = new Rectangle(200, 200, 400, 400);
+  Rectangle b = new Rectangle(150, 150, 400, 400);
   for(int i = 0; i < amt; i++) {
     pts.add(new Vector2(b.left + rng.nextDouble() * b.width, b.top + rng.nextDouble() * b.height));
   }
@@ -99,7 +101,7 @@ draw(Voronoi v) {
   ctx.lineTo(c.width, v.sweep);
   ctx.stroke();
 
-  //voronoi
+  //voronoi points
   ctx.fillStyle = "#66F";
   v.vertices.forEach((Vector2 v) {
     ctx.beginPath();
@@ -107,7 +109,8 @@ draw(Voronoi v) {
     ctx.fill();
   });
 
- /* ctx.strokeStyle = "#66F";
+  /*//voronoi edges
+  ctx.strokeStyle = "#66F";
   ctx.lineWidth = 2;
   v.edges.forEach((HalfEdge e) {
     if(e.start != null && e.end != null) {
@@ -121,5 +124,5 @@ draw(Voronoi v) {
       ctx.lineTo(rng.nextInt(c.width),0);
       ctx.stroke();
     }
-  }); */
+  });*/
 }

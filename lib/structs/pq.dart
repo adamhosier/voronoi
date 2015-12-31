@@ -96,4 +96,8 @@ class PQ<E extends Comparable> {
     return clone;
   }
 
+  String toString() {
+    return "PQ " + data.toString();
+  }
+
 }
