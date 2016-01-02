@@ -40,7 +40,11 @@ class Voronoi {
     _sites.forEach((VoronoiSite s) => _q.push(new VoronoiSiteEvent(s)));
 
     // start processing events
-    while(_q.isNotEmpty && start) {
+    if(start) generate();
+  }
+
+  void generate() {
+    while(_q.isNotEmpty) {
       nextEvent();
     }
   }
@@ -91,14 +95,11 @@ class Voronoi {
       }
 
       // update voronoi structure
-      HalfEdge e1 = new HalfEdge();
-      HalfEdge e2 = new HalfEdge();
+      HalfEdge e1 = _d.newEdge();
+      HalfEdge e2 = _d.newEdge();
       e1.twin = e2;
       newTree.edge = e1;
       newSubTree.edge = e2;
-
-      _d.edges.add(e1);
-      _d.edges.add(e2);
 
       // check new trips
       _checkTriple(leafL.leftLeaf, leafL, leafM);
@@ -113,7 +114,7 @@ class Voronoi {
     }
 
     BSTLeaf leaf = e.arc;
-    BSTInternalNode oldIntersection = leaf.parent;
+    BSTInternalNode oldNode = leaf.parent;
 
     // events
     BSTLeaf leafL = leaf.leftLeaf;
@@ -122,31 +123,32 @@ class Voronoi {
     _checkFalseAlarm(leafR);
 
     // remove intersection node
-    BSTInternalNode n = new BSTInternalNode();
-    if(oldIntersection.parent.l == oldIntersection) {
-      oldIntersection.parent.l = leaf.brother;
+    if(oldNode.parent.l == oldNode) {
+      oldNode.parent.l = leaf.brother;
     } else {
-      oldIntersection.parent.r = leaf.brother;
+      oldNode.parent.r = leaf.brother;
     }
-    _t.fix(e.c.o, e.y);
+
+    // update node referencing old arc
+    BSTInternalNode brokenNode = _t.findBrokenNode(e.c.o, e.y);
+    brokenNode.a = brokenNode.l.rightMostLeaf.site;
+    brokenNode.b = brokenNode.r.leftMostLeaf.site;
 
     // diagram
-    _Vert v = new _Vert(e.c.o);
-    HalfEdge e1 = new HalfEdge();
-    HalfEdge e2 = new HalfEdge();
+    _Vert v = _d.newVert(e.c.o);
+    HalfEdge e1 = _d.newEdge();
+    HalfEdge e2 = _d.newEdge();
     e1.twin = e2;
 
+    // attach new edge to vertex
     e1.o = v;
-    oldIntersection.edge.twin.o = v;
-    oldIntersection.edge.next = e1;
-    oldIntersection.parent.edge.o = v;
-    oldIntersection.parent.edge.twin.next = e1;
 
-    e2.next = oldIntersection.edge.twin;
+    // attach old node edges to this vertex
+    oldNode.edge.twin.o = v;
+    brokenNode.edge.twin.o = v;
 
-    _d.vertices.add(v);
-    _d.edges.add(e1);
-    _d.edges.add(e2);
+    //update edge of new fixed node
+    brokenNode.edge = e1;
 
     _checkTriple(leafL.leftLeaf, leafL, leafL.rightLeaf);
     _checkTriple(leafR.leftLeaf, leafR, leafR.rightLeaf);
@@ -222,8 +224,7 @@ class VoronoiSite {
 
   VoronoiSite(this.pos);
 
-  bool operator ==(Object other) => other is VoronoiSite && other.x == this.x &&
-                                                            other.y == this.y;
+  bool operator ==(Object other) => other is VoronoiSite && other.x == this.x && other.y == this.y;
 
   String toString() {
     return "Voronoi site at ($x, $y)";

@@ -30,28 +30,23 @@ class BST {
     return null;
   }
 
-  void fix(Vector2 v, double sweep) {
-    print("Fixing " + v.x.toString());
-    _fix(root, v, sweep);
+  BSTInternalNode findBrokenNode(Vector2 v, double sweep) {
+    return _findBrokenNode(root, v, sweep);
   }
 
-  void _fix(BSTNode node, Vector2 v, double sweep) {
+  BSTInternalNode _findBrokenNode(BSTNode node, Vector2 v, double sweep) {
     if(node is BSTInternalNode) {
       double x = _findBreakpoint(node.a, node.b, sweep).x;
       double diff = v.x - x;
       if(diff < -Voronoi.Epsilon) {
-        print("Going left");
-        _fix(node.l, v, sweep);
+        return _findBrokenNode(node.l, v, sweep);
       } else if(diff.abs() < Voronoi.Epsilon) {
-        print("Bingo");
-        node.a = node.l.rightMostLeaf.site;
-        node.b = node.r.leftMostLeaf.site;
+        return node;
       } else {
-        print("Going right");
-        _fix(node.r, v, sweep);
+        return _findBrokenNode(node.r, v, sweep);
       }
     }
-    print("Leaf");
+    return null;
   }
 
   Vector2 _findBreakpoint(VoronoiSite aSite, VoronoiSite bSite, double sweep) {

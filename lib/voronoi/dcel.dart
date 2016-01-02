@@ -4,6 +4,17 @@ class DCEL {
   List<_Vert> vertices = new List();
   List<HalfEdge> edges = new List();
 
+  HalfEdge newEdge() {
+    HalfEdge edge = new HalfEdge();
+    edges.add(edge);
+    return edge;
+  }
+
+  _Vert newVert(Vector2 o) {
+    _Vert vert = new _Vert(o);
+    vertices.add(vert);
+    return vert;
+  }
 }
 
 class HalfEdge {
@@ -14,7 +25,7 @@ class HalfEdge {
   HalfEdge _prev;
 
   Vector2 get start => o?.p;
-  Vector2 get end => next?.o?.p;
+  Vector2 get end => twin.o?.p;
   HalfEdge get twin => _twin;
 
   HalfEdge get next => _next;
