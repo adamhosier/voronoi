@@ -155,7 +155,7 @@ class BSTLeaf extends BSTNode {
   double get x => site.x;
   double get y => site.y;
   Vector2 get pos => new Vector2(x, y);
-  boolean get hasEvent => event == null;
+  bool get hasEvent => event == null;
 
   BSTLeaf get leftMostLeaf => this;
   BSTLeaf get rightMostLeaf => this;

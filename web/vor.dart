@@ -5,6 +5,8 @@ import "dart:math";
 import "package:vor/geometry/geometry.dart";
 import "package:vor/structs/dll.dart";
 import "package:vor/voronoi/voronoi.dart";
+import 'package:vor/sampler/sampler.dart';
+
 
 CanvasElement c;
 CanvasRenderingContext2D ctx;
@@ -53,23 +55,18 @@ main() {
 }
 
 Voronoi getVoronoi() {
-  return new Voronoi(getPoints(NUM_POINTS), c.getBoundingClientRect(), start:false);
+  return new Voronoi(getPoints(NUM_POINTS), c.getBoundingClientRect(), start:true);
 }
 
-List<Vector2> getPoints(int amt, [int seed]) {
-  //return [new Vector2(200.0, 200.0), new Vector2(150.0, 250.0), new Vector2(225.0, 275.0), new Vector2(160.0, 350.0), new Vector2(300.0, 360.0)];
-  List<Vector2> pts = new List();
-  Random rng = new Random(seed);
-
+List<Vector2> getPoints(int amt) {
   int bounds = 100;
   Rectangle b = new Rectangle(bounds, bounds, c.width - 2*bounds, c.height - 2*bounds);
-  //Rectangle b = new Rectangle(400, 100, 300, 300);
 
-  for(int i = 0; i < amt; i++) {
-    pts.add(new Vector2(b.left + rng.nextDouble() * b.width, b.top + rng.nextDouble() * b.height));
-  }
+  //Sampler s = new UniformSampler(b);
+  //Sampler s = new JitteredGridSampler(b);
+  Sampler s = new PoissonDiskSampler(b);
 
-  return pts;
+  return s.generatePoints(amt);
 }
 
 draw(Voronoi v) {

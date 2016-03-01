@@ -5,7 +5,7 @@ class PQ<E extends Comparable> {
   List<E> data = new List<E>();
 
   bool get isEmpty {
-    return data.length == 0;;
+    return data.length == 0;
   }
 
   bool get isNotEmpty {
