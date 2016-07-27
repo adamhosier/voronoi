@@ -8,7 +8,7 @@ class PoissonDiskSampler extends Sampler {
     us = new UniformSampler.withRng(r, _rng);
   }
 
-  List<Vector2> generatePoints(int numPoints, [k = 20]) {
+  List<Vector2> generatePoints(num numPoints, [k = 20]) {
     // output points
     List<Vector2> ps = new List();
 

@@ -8,6 +8,21 @@ class BST {
   bool get isEmpty => root == null;
   bool get isNotEmpty => !isEmpty;
 
+  List<BSTInternalNode> get internalNodes {
+    return _getInternalNodes(root);
+  }
+
+  List<BSTInternalNode> _getInternalNodes(BSTNode node) {
+    if(node is BSTInternalNode) {
+      List<BSTInternalNode> nodes = new List();
+      nodes.addAll(_getInternalNodes(node.l));
+      nodes.add(node);
+      nodes.addAll(_getInternalNodes(node.r));
+      return nodes;
+    }
+    return [];
+  }
+
   getBreakpoints(double y) {
     return _findBreakpoints(root, y, []);
   }
@@ -49,6 +64,10 @@ class BST {
     return null;
   }
 
+  Vector2 findBreakpoint(BSTInternalNode node, double sweep) {
+    return _findBreakpoint(node.a, node.b, sweep);
+  }
+
   Vector2 _findBreakpoint(VoronoiSite aSite, VoronoiSite bSite, double sweep) {
     // transform into new plane
     Vector2 a = new Vector2(0.0, sweep - aSite.y);
@@ -62,7 +81,9 @@ class BST {
     double na = b.y - a.y;
     double nb = 2.0*b.x*a.y;
     double nc = a.y * b.y * (a.y - b.y) - b.x * b.x * a.y;
-    Vector2 result = new Vector2((-nb + sqrt(nb*nb - 4.0*na*nc)) / (2.0*na), 0.0);
+    double x = (-nb + sqrt(nb*nb - 4.0*na*nc)) / (2.0*na);
+    double y = -(a.y * a.y + a.x * a.x - 2 * x * a.x + x * x) / (2 * a.y);
+    Vector2 result = new Vector2(x, y);
 
     // transform back
     return result + new Vector2(aSite.x, sweep);

@@ -17,12 +17,13 @@ class Voronoi {
   List<VoronoiSite> _sites;
   List<Circle> circles;
 
-  double sweep = 0.0; //for drawing purposes
+  double sweep = 0.0;
 
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
   List<Vector2> get vertices => _d.vertices.map((_Vert v) => v.p).toList();
   List<HalfEdge> get edges => _d.edges;
   List<Vector2> get beachBreakpoints => _t.getBreakpoints(sweep);
+  DCEL get dcel => _d;
 
   PQ<VoronoiEvent> get q => _q;
   BST get t => _t;
@@ -47,12 +48,22 @@ class Voronoi {
     while(_q.isNotEmpty) {
       nextEvent();
     }
+    boundToBox();
   }
 
   void nextEvent() {
     if(_q.isNotEmpty) {
       _handleEvent(_q.pop());
     }
+  }
+
+  void boundToBox() {
+    _t.internalNodes.forEach((BSTInternalNode node) {
+      HalfEdge e = node.edge;
+      // add vertices for infinite edges
+      e.twin.o = _d.newVert(_t.findBreakpoint(node, sweep));
+      //TODO: trim extended edges
+    });
   }
 
   void _handleEvent(VoronoiEvent e) {

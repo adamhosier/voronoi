@@ -14,7 +14,7 @@ Voronoi v;
 DLL d;
 Random rng = new Random();
 
-int NUM_POINTS = 1000;
+int NUM_POINTS = 200;
 
 main() {
   d = new DLL();
@@ -59,8 +59,9 @@ Voronoi getVoronoi() {
 }
 
 List<Vector2> getPoints(int amt) {
-  int bounds = 100;
-  Rectangle b = new Rectangle(bounds, bounds, c.width - 2*bounds, c.height - 2*bounds);
+  //return [new Vector2(101.0, 102.0), new Vector2(204.0,201.0), new Vector2(107.0, 203.0)];
+  int padding = 100;
+  Rectangle b = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
 
   //Sampler s = new UniformSampler(b);
   //Sampler s = new JitteredGridSampler(b);
