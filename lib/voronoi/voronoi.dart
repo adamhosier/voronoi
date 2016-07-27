@@ -25,10 +25,12 @@ class Voronoi {
   List<Vector2> get beachBreakpoints => _t.getBreakpoints(sweep);
   DCEL get dcel => _d;
 
+  Rectangle boundingBox;
+
   PQ<VoronoiEvent> get q => _q;
   BST get t => _t;
 
-  Voronoi(List<Vector2> pts, Rectangle box, {start : true}) {
+  Voronoi(List<Vector2> pts, this.boundingBox, {start : true}) {
 
     // init structures
     _q = new PQ();
@@ -62,7 +64,22 @@ class Voronoi {
       HalfEdge e = node.edge;
       // add vertices for infinite edges
       e.twin.o = _d.newVert(_t.findBreakpoint(node, sweep));
-      //TODO: trim extended edges
+      //TODO: extend these edges if they dont leave rect
+    });
+    _d.edges.forEach((HalfEdge e) {
+      while(true) {
+        if(e.start.y > boundingBox.bottom) {
+          e.o = new _Vert(new Vector2(e.start.x + (e.end.x - e.start.x) * (boundingBox.bottom - e.start.y) / (e.end.y - e.start.y),boundingBox.bottom));
+        } else if(e.start.y < boundingBox.top) {
+          e.o = new _Vert(new Vector2(e.start.x + (e.end.x - e.start.x) * (boundingBox.top - e.start.y) / (e.end.y - e.start.y),boundingBox.top));
+        } else if(e.start.x < boundingBox.left) {
+          e.o = new _Vert(new Vector2(boundingBox.left, e.start.y + (e.end.y - e.start.y) * (boundingBox.left - e.start.x) / (e.end.x - e.start.x)));
+        } else if(e.start.x > boundingBox.right) {
+          e.o = new _Vert(new Vector2(boundingBox.right, e.start.y + (e.end.y - e.start.y) * (boundingBox.right - e.start.x) / (e.end.x - e.start.x)));
+        } else {
+          return;
+        }
+      }
     });
   }
 

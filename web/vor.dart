@@ -16,6 +16,9 @@ Random rng = new Random();
 
 int NUM_POINTS = 200;
 
+int padding = 50;
+Rectangle box = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
+
 main() {
   d = new DLL();
   c = document.getElementById("draw");
@@ -55,17 +58,14 @@ main() {
 }
 
 Voronoi getVoronoi() {
-  return new Voronoi(getPoints(NUM_POINTS), c.getBoundingClientRect(), start:true);
+  return new Voronoi(getPoints(NUM_POINTS), box, start:true);
 }
 
 List<Vector2> getPoints(int amt) {
-  //return [new Vector2(101.0, 102.0), new Vector2(204.0,201.0), new Vector2(107.0, 203.0)];
-  int padding = 100;
-  Rectangle b = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
 
-  //Sampler s = new UniformSampler(b);
-  //Sampler s = new JitteredGridSampler(b);
-  Sampler s = new PoissonDiskSampler(b);
+  //Sampler s = new UniformSampler(box);
+  //Sampler s = new JitteredGridSampler(box);
+  Sampler s = new PoissonDiskSampler(new Rectangle(box.left + 50, box.top + 50, box.width - 100, box.height - 100));
 
   return s.generatePoints(amt);
 }
