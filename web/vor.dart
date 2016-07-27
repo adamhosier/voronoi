@@ -16,8 +16,8 @@ Random rng = new Random();
 
 int NUM_POINTS = 200;
 
-int padding = 50;
-Rectangle box = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
+Rectangle box;
+
 
 main() {
   d = new DLL();
@@ -26,6 +26,8 @@ main() {
 
   c.width = window.innerWidth;
   c.height = window.innerHeight;
+  int padding = 50;
+  box = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
 
   v = getVoronoi();
   draw(v);
@@ -65,7 +67,8 @@ List<Vector2> getPoints(int amt) {
 
   //Sampler s = new UniformSampler(box);
   //Sampler s = new JitteredGridSampler(box);
-  Sampler s = new PoissonDiskSampler(new Rectangle(box.left + 50, box.top + 50, box.width - 100, box.height - 100));
+  //Sampler s = new PoissonDiskSampler(new Rectangle(box.left + 50, box.top + 50, box.width - 100, box.height - 100));
+  Sampler s = new PoissonDiskSampler(box);
 
   return s.generatePoints(amt);
 }
@@ -119,6 +122,9 @@ draw(Voronoi v) {
       ctx.stroke();
     }
   });
+
+  //bounding box
+  ctx.strokeRect(box.left,box.top,box.width,box.height);
 
   /*//voronoi points
   ctx.fillStyle = "#FFF";
