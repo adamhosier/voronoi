@@ -166,6 +166,21 @@ class BSTInternalNode extends BSTNode {
     this._r = n;
   }
 
+  bool isInRightSubtreeOf(BSTInternalNode root) {
+    if(parent == root) {
+      return parent.r == this;
+    } else {
+      return parent.isInRightSubtreeOf(root);
+    }
+  }
+
+  bool isInLeftSubtreeOf(BSTInternalNode root) {
+    if(parent == root) {
+      return parent.l == this;
+    } else {
+      return parent.isInLeftSubtreeOf(root);
+    }
+  }
 }
 
 class BSTLeaf extends BSTNode {

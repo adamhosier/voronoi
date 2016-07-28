@@ -25,7 +25,7 @@ class HalfEdge {
   HalfEdge _prev;
 
   Vector2 get start => o?.p;
-  Vector2 get end => twin.o?.p;
+  Vector2 get end => twin?.o?.p;
   HalfEdge get twin => _twin;
 
   HalfEdge get next => _next;
@@ -43,6 +43,10 @@ class HalfEdge {
   void set twin(HalfEdge t) {
     this._twin = t;
     t._twin = this;
+  }
+
+  String toString() {
+    return "Edge start: $start, end $end";
   }
 }
 

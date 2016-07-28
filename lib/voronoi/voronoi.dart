@@ -50,7 +50,7 @@ class Voronoi {
     while(_q.isNotEmpty) {
       nextEvent();
     }
-    boundToBox();
+    bindToBox();
   }
 
   void nextEvent() {
@@ -59,28 +59,60 @@ class Voronoi {
     }
   }
 
-  void boundToBox() {
+  void bindToBox() {
     _t.internalNodes.forEach((BSTInternalNode node) {
       HalfEdge e = node.edge;
       // add vertices for infinite edges
       e.twin.o = _d.newVert(_t.findBreakpoint(node, sweep));
       //TODO: extend these edges if they dont leave rect
     });
-    _d.edges.forEach((HalfEdge e) {
-      while(true) {
-        if(e.start.y > boundingBox.bottom) {
-          e.o = new _Vert(new Vector2(e.start.x + (e.end.x - e.start.x) * (boundingBox.bottom - e.start.y) / (e.end.y - e.start.y),boundingBox.bottom));
-        } else if(e.start.y < boundingBox.top) {
-          e.o = new _Vert(new Vector2(e.start.x + (e.end.x - e.start.x) * (boundingBox.top - e.start.y) / (e.end.y - e.start.y),boundingBox.top));
-        } else if(e.start.x < boundingBox.left) {
-          e.o = new _Vert(new Vector2(boundingBox.left, e.start.y + (e.end.y - e.start.y) * (boundingBox.left - e.start.x) / (e.end.x - e.start.x)));
-        } else if(e.start.x > boundingBox.right) {
-          e.o = new _Vert(new Vector2(boundingBox.right, e.start.y + (e.end.y - e.start.y) * (boundingBox.right - e.start.x) / (e.end.x - e.start.x)));
-        } else {
-          return;
+    Clipper c = new Clipper(boundingBox);
+    for(int i = 0; i < _d.edges.length; i++) {
+      HalfEdge e = _d.edges[i];
+      if(c.isOutside(e.start, e.end)) {
+        _d.edges.remove(e);
+        i--;
+      } else {
+        while (true) {
+          int code = c.getOutCode(e.start);
+          if (code & Clipper.BOTTOM > 0) {
+            e.o = new _Vert(new Vector2(e.start.x +
+                (e.end.x - e.start.x) * (boundingBox.bottom - e.start.y) /
+                    (e.end.y - e.start.y), boundingBox.bottom));
+          } else if (code & Clipper.TOP > 0) {
+            e.o = new _Vert(new Vector2(e.start.x +
+                (e.end.x - e.start.x) * (boundingBox.top - e.start.y) /
+                    (e.end.y - e.start.y), boundingBox.top));
+          } else if (code & Clipper.LEFT > 0) {
+            e.o = new _Vert(new Vector2(boundingBox.left, e.start.y +
+                (e.end.y - e.start.y) * (boundingBox.left - e.start.x) /
+                    (e.end.x - e.start.x)));
+          } else if (code & Clipper.RIGHT > 0) {
+            e.o = new _Vert(new Vector2(boundingBox.right, e.start.y +
+                (e.end.y - e.start.y) * (boundingBox.right - e.start.x) /
+                    (e.end.x - e.start.x)));
+          } else {
+            break;
+          }
         }
       }
-    });
+    }
+
+    HalfEdge start, curr;
+    for(start in _d.edges) {
+      if(start.prev == null) {
+        break;
+      }
+    }
+    curr = start;
+    while(curr.next != null) curr = curr.next;
+    HalfEdge e1 = _d.newEdge();
+    HalfEdge e2 = _d.newEdge();
+    e1.twin = e2;
+    e1.o = curr.twin.o;
+    e2.o = start.o;
+    start.next = e1;
+
   }
 
   void _handleEvent(VoronoiEvent e) {
@@ -126,8 +158,8 @@ class Voronoi {
       HalfEdge e1 = _d.newEdge();
       HalfEdge e2 = _d.newEdge();
       e1.twin = e2;
-      newTree.edge = e1;
-      newSubTree.edge = e2;
+      newTree.edge = e2;
+      newSubTree.edge = e1;
 
       // check new trips
       _checkTriple(leafL.leftLeaf, leafL, leafM);
@@ -157,7 +189,7 @@ class Voronoi {
       oldNode.parent.r = leaf.brother;
     }
 
-    // update node referencing old arc
+    // update node referencing old arc (fix broken node)
     BSTInternalNode brokenNode = _t.findBrokenNode(e.c.o, e.y);
     brokenNode.a = brokenNode.l.rightMostLeaf.site;
     brokenNode.b = brokenNode.r.leftMostLeaf.site;
@@ -168,6 +200,17 @@ class Voronoi {
     HalfEdge e2 = _d.newEdge();
     e1.twin = e2;
 
+    // connect structure
+    if(oldNode.isInLeftSubtreeOf(brokenNode)) { //TODO why
+      brokenNode.edge.next = e1;
+      e2.next = oldNode.edge.twin;
+      oldNode.edge.next = brokenNode.edge.twin;
+    } else {
+      oldNode.edge.next = e1;
+      e2.next = brokenNode.edge.twin;
+      brokenNode.edge.next = oldNode.edge.twin;
+    }
+
     // attach new edge to vertex
     e1.o = v;
 
@@ -175,7 +218,7 @@ class Voronoi {
     oldNode.edge.twin.o = v;
     brokenNode.edge.twin.o = v;
 
-    //update edge of new fixed node
+    // update edge of new fixed node
     brokenNode.edge = e1;
 
     _checkTriple(leafL.leftLeaf, leafL, leafL.rightLeaf);

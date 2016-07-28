@@ -77,7 +77,6 @@ class PoissonDiskSampler extends Sampler {
       }
       if(i == k) active.remove(target);
     }
-    print(ps.length);
     return ps;
   }
 }

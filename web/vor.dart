@@ -14,7 +14,7 @@ Voronoi v;
 DLL d;
 Random rng = new Random();
 
-int NUM_POINTS = 200;
+int NUM_POINTS = 20;
 
 Rectangle box;
 
@@ -30,6 +30,10 @@ main() {
   box = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
 
   v = getVoronoi();
+
+  stepStart = rng.nextInt(v.edges.length);
+  curr = v.edges[stepStart];
+
   draw(v);
 
   window.onKeyDown.listen((KeyboardEvent e) {
@@ -51,12 +55,14 @@ main() {
       v.generate();
       draw(v);
     }
-    if(e.keyCode == 82) { // r to reload
+    if(e.keyCode == 65) { // a to reload
       v = getVoronoi();
       draw(v);
     }
+    if(e.keyCode == 70) { // f to step
+      drawNextStep(v);
+    }
   });
-
 }
 
 Voronoi getVoronoi() {
@@ -81,17 +87,17 @@ draw(Voronoi v) {
   ctx.strokeStyle = "#DDD";
   v.sites.forEach((Vector2 p) {
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 2, 0, 2*PI);
+    ctx.arc(p.x, p.y, 2, 0, 2 * PI);
     ctx.fill();
 
-    /*//arcs
-    if(p.y <= v.sweep) {
+    //arcs
+    if (p.y <= v.sweep) {
       double xdist = sqrt(v.sweep * v.sweep - p.y * p.y);
       ctx.beginPath();
       ctx.moveTo(p.x - xdist, 0);
       ctx.quadraticCurveTo(p.x, p.y + v.sweep, p.x + xdist, 0);
       ctx.stroke();
-    }*/
+    }
   });
 
   //sweep line
@@ -111,20 +117,29 @@ draw(Voronoi v) {
   });*/
 
   //voronoi edges
+
   ctx.strokeStyle = "#00F";
   v.edges.forEach((HalfEdge e) {
-    if(e.o != null && e.twin.o != null) {
-      Vector2 start = e.o.p;
-      Vector2 end = e.twin.o.p;
+    if(e.start != null && e.end != null) {
+      Vector2 start = e.start;
+      Vector2 end = e.end;
+
+      double length = 6.0;
+      double angle = 5 * PI / 6;
+      angle = atan2((end.y - start.y), (end.x - start.x)) - angle;
+      Vector2 markStart = new Vector2((start.x + 3 * end.x) / 4, (start.y + 3 * end.y) / 4);
+      Vector2 markEnd = new Vector2(markStart.x + cos(angle) * length, markStart.y + sin(angle) * length);
+
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
       ctx.lineTo(end.x, end.y);
+      ctx.moveTo(markStart.x, markStart.y);
+      ctx.lineTo(markEnd.x, markEnd.y);
       ctx.stroke();
+      e = e.next;
     }
   });
 
-  //bounding box
-  ctx.strokeRect(box.left,box.top,box.width,box.height);
 
   /*//voronoi points
   ctx.fillStyle = "#FFF";
@@ -135,4 +150,36 @@ draw(Voronoi v) {
     ctx.fill();
     ctx.stroke();
   });*/
+}
+
+int stepStart;
+HalfEdge curr;
+drawNextStep(Voronoi v) {
+  if(curr.next == null) return;
+  draw(v);
+  HalfEdge e = v.edges[stepStart];
+  ctx.beginPath(); ctx.arc(e.start.x, e.start.y, 2, 0, 2*PI); ctx.fill();
+  ctx.strokeStyle = "#00F";
+
+  while(e.next != null && e != curr) {
+    Vector2 start = e.start;
+    Vector2 end = e.end;
+
+    double length = 6.0;
+    double angle = 5 * PI / 6;
+    angle = atan2((end.y - start.y), (end.x - start.x)) - angle;
+    Vector2 markStart = new Vector2((start.x + 3 * end.x) / 4, (start.y + 3 * end.y) / 4);
+    Vector2 markEnd = new Vector2(markStart.x + cos(angle) * length, markStart.y + sin(angle) * length);
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.moveTo(markStart.x, markStart.y);
+    ctx.lineTo(markEnd.x, markEnd.y);
+    ctx.stroke();
+
+    e = e.next;
+  }
+
+  curr = curr.next;
 }
