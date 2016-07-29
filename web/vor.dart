@@ -70,7 +70,6 @@ Voronoi getVoronoi() {
 }
 
 List<Vector2> getPoints(int amt) {
-  return [new Vector2(200.1,400.0), new Vector2(450.2, 250.1), new Vector2(380.4, 360.1), new Vector2(290.2, 100.3)];
   //Sampler s = new UniformSampler(box);
   //Sampler s = new JitteredGridSampler(box);
   //Sampler s = new PoissonDiskSampler(new Rectangle(box.left + 50, box.top + 50, box.width - 100, box.height - 100));
@@ -163,8 +162,8 @@ draw(Voronoi v) {
     ctx.stroke();
 
     e = e.next;
-  } while(e != null && e != start);
-   */
+  } while(e != null && e != start); */
+
 
 
   /*//voronoi points

@@ -20,7 +20,7 @@ class Voronoi {
   double sweep = 0.0;
 
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
-  List<Vector2> get vertices => _d.vertices.map((_Vert v) => v.p).toList();
+  List<Vector2> get vertices => _d.vertices.map((Vertex v) => v.p).toList();
   List<HalfEdge> get edges => _d.edges;
   List<Vector2> get beachBreakpoints => _t.getBreakpoints(sweep);
   DCEL get dcel => _d;
@@ -73,37 +73,36 @@ class Voronoi {
       }
       e.twin.o = _d.newVert(new Vector2(p.x*ratio, p.y*ratio));
     });
-    for(int i = 0; i < _d.edges.length; i++) {
-      HalfEdge e = _d.edges[i];
-      if(c.isOutside(e.start, e.end)) {
-        _d.edges.remove(e);
-        i--;
-      } else {
-        while (true) {
-          int code = c.getOutCode(e.start);
-          if (code & Clipper.BOTTOM > 0) {
-            e.o = new _Vert(new Vector2(e.start.x +
-                (e.end.x - e.start.x) * (boundingBox.bottom - e.start.y) /
-                    (e.end.y - e.start.y), boundingBox.bottom));
-          } else if (code & Clipper.TOP > 0) {
-            e.o = new _Vert(new Vector2(e.start.x +
-                (e.end.x - e.start.x) * (boundingBox.top - e.start.y) /
-                    (e.end.y - e.start.y), boundingBox.top));
-          } else if (code & Clipper.LEFT > 0) {
-            e.o = new _Vert(new Vector2(boundingBox.left, e.start.y +
-                (e.end.y - e.start.y) * (boundingBox.left - e.start.x) /
-                    (e.end.x - e.start.x)));
-          } else if (code & Clipper.RIGHT > 0) {
-            e.o = new _Vert(new Vector2(boundingBox.right, e.start.y +
-                (e.end.y - e.start.y) * (boundingBox.right - e.start.x) /
-                    (e.end.x - e.start.x)));
-          } else {
-            break;
-          }
+
+    // trim edges
+    _d.edges.removeWhere((HalfEdge e) => c.isOutside(e.start, e.end));
+    _d.vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(new Point(v.p.x, v.p.y)));
+    _d.edges.forEach((HalfEdge e) {
+      while (true) {
+        int code = c.getOutCode(e.start);
+        if (code & Clipper.BOTTOM > 0) {
+          e.o = new Vertex(new Vector2(e.start.x +
+              (e.end.x - e.start.x) * (boundingBox.bottom - e.start.y) /
+                  (e.end.y - e.start.y), boundingBox.bottom));
+        } else if (code & Clipper.TOP > 0) {
+          e.o = new Vertex(new Vector2(e.start.x +
+              (e.end.x - e.start.x) * (boundingBox.top - e.start.y) /
+                  (e.end.y - e.start.y), boundingBox.top));
+        } else if (code & Clipper.LEFT > 0) {
+          e.o = new Vertex(new Vector2(boundingBox.left, e.start.y +
+              (e.end.y - e.start.y) * (boundingBox.left - e.start.x) /
+                  (e.end.x - e.start.x)));
+        } else if (code & Clipper.RIGHT > 0) {
+          e.o = new Vertex(new Vector2(boundingBox.right, e.start.y +
+              (e.end.y - e.start.y) * (boundingBox.right - e.start.x) /
+                  (e.end.x - e.start.x)));
+        } else {
+          break;
         }
       }
-    }
-    /*
+    });
+
+    // close edges
     HalfEdge start, curr;
     for(start in _d.edges) {
       if(start.prev == null) {
@@ -118,7 +117,7 @@ class Voronoi {
     e1.o = curr.twin.o;
     e2.o = start.o;
     start.next = e1;
-    */
+
   }
 
   void _handleEvent(VoronoiEvent e) {
@@ -181,6 +180,8 @@ class Voronoi {
 
     BSTLeaf leaf = e.arc;
     BSTInternalNode oldNode = leaf.parent;
+    BSTInternalNode brokenNode = _t.findBrokenNode(e.c.o, e.y);
+    bool oldLeftOfBroken = oldNode.isInLeftSubtreeOf(brokenNode);
 
     // events
     BSTLeaf leafL = leaf.leftLeaf;
@@ -196,18 +197,17 @@ class Voronoi {
     }
 
     // update node referencing old arc (fix broken node)
-    BSTInternalNode brokenNode = _t.findBrokenNode(e.c.o, e.y);
     brokenNode.a = brokenNode.l.rightMostLeaf.site;
     brokenNode.b = brokenNode.r.leftMostLeaf.site;
 
     // diagram
-    _Vert v = _d.newVert(e.c.o);
+    Vertex v = _d.newVert(e.c.o);
     HalfEdge e1 = _d.newEdge();
     HalfEdge e2 = _d.newEdge();
     e1.twin = e2;
 
     // connect structure
-    if(oldNode.isInLeftSubtreeOf(brokenNode)) { //TODO why
+    if(oldLeftOfBroken) {
       brokenNode.edge.next = e1;
       e2.next = oldNode.edge.twin;
       oldNode.edge.next = brokenNode.edge.twin;

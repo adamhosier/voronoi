@@ -1,7 +1,7 @@
 part of voronoi;
 
 class DCEL {
-  List<_Vert> vertices = new List();
+  List<Vertex> vertices = new List();
   List<HalfEdge> edges = new List();
 
   HalfEdge newEdge() {
@@ -10,15 +10,23 @@ class DCEL {
     return edge;
   }
 
-  _Vert newVert(Vector2 o) {
-    _Vert vert = new _Vert(o);
+  Vertex newVert(Vector2 o) {
+    Vertex vert = new Vertex(o);
     vertices.add(vert);
     return vert;
+  }
+
+  void removeEdge(HalfEdge e) {
+    edges.remove(e);
+  }
+
+  void removeVert(Vertex v) {
+    vertices.remove(v);
   }
 }
 
 class HalfEdge {
-  _Vert o; //origin
+  Vertex o; //origin
   HalfEdge _twin;
   _Face face;
   HalfEdge _next;
@@ -56,9 +64,9 @@ class _Face {
   _Face(this.edge);
 }
 
-class _Vert {
+class Vertex {
   Vector2 p;
   HalfEdge e;
 
-  _Vert(this.p);
+  Vertex(this.p);
 }
