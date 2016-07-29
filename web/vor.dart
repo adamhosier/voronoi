@@ -14,7 +14,7 @@ Voronoi v;
 DLL d;
 Random rng = new Random();
 
-int NUM_POINTS = 20;
+int NUM_POINTS = 50;
 
 Rectangle box;
 
@@ -70,7 +70,7 @@ Voronoi getVoronoi() {
 }
 
 List<Vector2> getPoints(int amt) {
-
+  return [new Vector2(200.1,400.0), new Vector2(450.2, 250.1), new Vector2(380.4, 360.1), new Vector2(290.2, 100.3)];
   //Sampler s = new UniformSampler(box);
   //Sampler s = new JitteredGridSampler(box);
   //Sampler s = new PoissonDiskSampler(new Rectangle(box.left + 50, box.top + 50, box.width - 100, box.height - 100));
@@ -91,6 +91,7 @@ draw(Voronoi v) {
     ctx.fill();
 
     //arcs
+    /*
     if (p.y <= v.sweep) {
       double xdist = sqrt(v.sweep * v.sweep - p.y * p.y);
       ctx.beginPath();
@@ -98,6 +99,7 @@ draw(Voronoi v) {
       ctx.quadraticCurveTo(p.x, p.y + v.sweep, p.x + xdist, 0);
       ctx.stroke();
     }
+    */
   });
 
   //sweep line
@@ -117,8 +119,8 @@ draw(Voronoi v) {
   });*/
 
   //voronoi edges
-
   ctx.strokeStyle = "#00F";
+
   v.edges.forEach((HalfEdge e) {
     if(e.start != null && e.end != null) {
       Vector2 start = e.start;
@@ -139,6 +141,30 @@ draw(Voronoi v) {
       e = e.next;
     }
   });
+
+  /*
+  HalfEdge start = v.edges[rng.nextInt(v.edges.length)];
+  HalfEdge e = start;
+  do {
+    Vector2 start = e.start;
+    Vector2 end = e.end;
+
+    double length = 6.0;
+    double angle = 5 * PI / 6;
+    angle = atan2((end.y - start.y), (end.x - start.x)) - angle;
+    Vector2 markStart = new Vector2((start.x + 3 * end.x) / 4, (start.y + 3 * end.y) / 4);
+    Vector2 markEnd = new Vector2(markStart.x + cos(angle) * length, markStart.y + sin(angle) * length);
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.moveTo(markStart.x, markStart.y);
+    ctx.lineTo(markEnd.x, markEnd.y);
+    ctx.stroke();
+
+    e = e.next;
+  } while(e != null && e != start);
+   */
 
 
   /*//voronoi points
@@ -161,7 +187,7 @@ drawNextStep(Voronoi v) {
   ctx.beginPath(); ctx.arc(e.start.x, e.start.y, 2, 0, 2*PI); ctx.fill();
   ctx.strokeStyle = "#00F";
 
-  while(e.next != null && e != curr) {
+ do {
     Vector2 start = e.start;
     Vector2 end = e.end;
 
@@ -179,7 +205,7 @@ drawNextStep(Voronoi v) {
     ctx.stroke();
 
     e = e.next;
-  }
+  } while(e != null && e.prev != curr);
 
   curr = curr.next;
 }

@@ -50,6 +50,7 @@ class Voronoi {
     while(_q.isNotEmpty) {
       nextEvent();
     }
+    if(sweep < boundingBox.bottom) _handleEvent(new VoronoiNullEvent(boundingBox.bottom));
     bindToBox();
   }
 
@@ -60,13 +61,18 @@ class Voronoi {
   }
 
   void bindToBox() {
+    Clipper c = new Clipper(boundingBox);
     _t.internalNodes.forEach((BSTInternalNode node) {
       HalfEdge e = node.edge;
       // add vertices for infinite edges
-      e.twin.o = _d.newVert(_t.findBreakpoint(node, sweep));
-      //TODO: extend these edges if they dont leave rect
+      Vector2 p = _t.findBreakpoint(node, sweep);
+      int ratio = 1;
+      while(boundingBox.containsPoint(new Point(p.x*ratio, p.y*ratio))) {
+        // extend to outside the box arbitrarily, we will clip it back later
+        ratio *= 2;
+      }
+      e.twin.o = _d.newVert(new Vector2(p.x*ratio, p.y*ratio));
     });
-    Clipper c = new Clipper(boundingBox);
     for(int i = 0; i < _d.edges.length; i++) {
       HalfEdge e = _d.edges[i];
       if(c.isOutside(e.start, e.end)) {
@@ -97,7 +103,7 @@ class Voronoi {
         }
       }
     }
-
+    /*
     HalfEdge start, curr;
     for(start in _d.edges) {
       if(start.prev == null) {
@@ -112,7 +118,7 @@ class Voronoi {
     e1.o = curr.twin.o;
     e2.o = start.o;
     start.next = e1;
-
+    */
   }
 
   void _handleEvent(VoronoiEvent e) {
