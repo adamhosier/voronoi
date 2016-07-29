@@ -39,13 +39,13 @@ class HalfEdge {
   HalfEdge get next => _next;
   void set next(HalfEdge other) {
     this._next = other;
-    other._prev = this;
+    other?._prev = this;
   }
 
   HalfEdge get prev => _prev;
   void set prev(HalfEdge other) {
     this._prev = other;
-    other._next = this;
+    other?._next = this;
   }
 
   void set twin(HalfEdge t) {

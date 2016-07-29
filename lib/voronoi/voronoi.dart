@@ -84,18 +84,22 @@ class Voronoi {
           e.o = new Vertex(new Vector2(e.start.x +
               (e.end.x - e.start.x) * (boundingBox.bottom - e.start.y) /
                   (e.end.y - e.start.y), boundingBox.bottom));
+          e.twin.next = null;
         } else if (code & Clipper.TOP > 0) {
           e.o = new Vertex(new Vector2(e.start.x +
               (e.end.x - e.start.x) * (boundingBox.top - e.start.y) /
                   (e.end.y - e.start.y), boundingBox.top));
+          e.twin.next = null;
         } else if (code & Clipper.LEFT > 0) {
           e.o = new Vertex(new Vector2(boundingBox.left, e.start.y +
               (e.end.y - e.start.y) * (boundingBox.left - e.start.x) /
                   (e.end.x - e.start.x)));
+          e.twin.next = null;
         } else if (code & Clipper.RIGHT > 0) {
           e.o = new Vertex(new Vector2(boundingBox.right, e.start.y +
               (e.end.y - e.start.y) * (boundingBox.right - e.start.x) /
                   (e.end.x - e.start.x)));
+          e.twin.next = null;
         } else {
           break;
         }
@@ -103,21 +107,20 @@ class Voronoi {
     });
 
     // close edges
-    HalfEdge start, curr;
-    for(start in _d.edges) {
-      if(start.prev == null) {
-        break;
-      }
-    }
-    curr = start;
-    while(curr.next != null) curr = curr.next;
-    HalfEdge e1 = _d.newEdge();
-    HalfEdge e2 = _d.newEdge();
-    e1.twin = e2;
-    e1.o = curr.twin.o;
-    e2.o = start.o;
-    start.next = e1;
+    HalfEdge start = _d.edges.firstWhere((HalfEdge e) => e.prev == null);
+    HalfEdge end = start;
 
+    do {
+      HalfEdge curr = start;
+      while(curr.next != null) curr = curr.next;
+      HalfEdge e1 = _d.newEdge();
+      HalfEdge e2 = _d.newEdge();
+      e1.twin = e2;
+      e1.o = curr.twin.o;
+      e2.o = start.o;
+      start.next = e1;
+      start = curr.twin;
+    } while(start != end);
   }
 
   void _handleEvent(VoronoiEvent e) {

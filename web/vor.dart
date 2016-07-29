@@ -14,7 +14,7 @@ Voronoi v;
 DLL d;
 Random rng = new Random();
 
-int NUM_POINTS = 50;
+int NUM_POINTS = 400;
 
 Rectangle box;
 
