@@ -9,7 +9,7 @@ part "tree.dart";
 
 class Voronoi {
 
-  static double Epsilon = 0.0000001;
+  static double Epsilon = 0.0001;
 
   PQ<VoronoiEvent> _q;
   BST _t;
