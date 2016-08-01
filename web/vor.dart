@@ -14,7 +14,7 @@ Voronoi v;
 DLL d;
 Random rng = new Random();
 
-int NUM_POINTS = 400;
+int NUM_POINTS = 500;
 
 Rectangle box;
 
@@ -142,9 +142,11 @@ draw(Voronoi v) {
   });
 
   /*
-  HalfEdge start = v.edges[rng.nextInt(v.edges.length)];
+  HalfEdge start = v.edges.firstWhere((HalfEdge e) => e.start.y == e.end.y).twin;
   HalfEdge e = start;
+  int i = 0;
   do {
+    i++;
     Vector2 start = e.start;
     Vector2 end = e.end;
 
@@ -162,7 +164,7 @@ draw(Voronoi v) {
     ctx.stroke();
 
     e = e.next;
-  } while(e != null && e != start); */
+  } while((e != null && e != start) && i < 100);*/
 
 
 

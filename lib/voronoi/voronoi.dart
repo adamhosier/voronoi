@@ -109,18 +109,48 @@ class Voronoi {
     // close edges
     HalfEdge start = _d.edges.firstWhere((HalfEdge e) => e.prev == null);
     HalfEdge end = start;
-
+    HalfEdge prev = null;
     do {
       HalfEdge curr = start;
-      while(curr.next != null) curr = curr.next;
-      HalfEdge e1 = _d.newEdge();
-      HalfEdge e2 = _d.newEdge();
-      e1.twin = e2;
-      e1.o = curr.twin.o;
-      e2.o = start.o;
-      start.next = e1;
+      // find loose edge
+      while (curr.next != null) curr = curr.next;
+
+      // deal with corner cases
+      if (curr.end.x != start.start.x && curr.end.y != start.start.y) {
+        HalfEdge e1 = _d.newEdge();
+        HalfEdge e2 = _d.newEdge();
+        HalfEdge e3 = _d.newEdge();
+        HalfEdge e4 = _d.newEdge();
+        e1.twin = e2;
+        e3.twin = e4;
+        e1.next = e3;
+        e3.next = start;
+        e1.o = curr.twin.o;
+        e4.o = start.o;
+        curr.next = e1;
+        Vertex cornerVertex = (curr.end.x > start.start.x) ?
+          (curr.end.y > start.start.y) ? _d.newVert(new Vector2(curr.end.x, start.start.y)) : _d.newVert(new Vector2(start.start.x, curr.end.y)) :
+          (curr.end.y < start.start.y) ? _d.newVert(new Vector2(curr.end.x, start.start.y)) : _d.newVert(new Vector2(start.start.x, curr.end.y));
+        e2.o = cornerVertex;
+        e3.o = cornerVertex;
+      } else {
+        // create new edges for outside box
+        HalfEdge e1 = _d.newEdge();
+        HalfEdge e2 = _d.newEdge();
+        e1.twin = e2;
+        e1.o = curr.twin.o;
+        e2.o = start.o;
+
+        // set pointers between them
+        curr.next = e1;
+        e1.next = start;
+        e2.prev = prev;
+
+        prev = e2;
+      }
+
       start = curr.twin;
-    } while(start != end);
+    } while (start != end);
   }
 
   void _handleEvent(VoronoiEvent e) {
