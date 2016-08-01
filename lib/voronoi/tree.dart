@@ -76,6 +76,7 @@ class BST {
     // if point lies on sweep line
     if(b.y == 0) return new Vector2(bSite.x, sweep);
     if(a.y == 0) return new Vector2(aSite.x, sweep);
+    if((a.y - b.y).abs() < Voronoi.Epsilon) return new Vector2((aSite.x + bSite.x) / 2, sweep);
 
     // calculate intersection
     double na = b.y - a.y;
