@@ -10,13 +10,13 @@ part "jitteredGridSampler.dart";
 abstract class Sampler {
 
   Random _rng;
-  Rectangle rect;
+  Rectangle _rect;
 
-  Sampler(this.rect) {
+  Sampler(this._rect) {
     _rng = new Random();
   }
 
-  Sampler.withRng(this.rect, this._rng);
+  Sampler.withRng(this._rect, this._rng);
 
   set rng(Random rng) => _rng = rng;
   set seed(int seed) => _rng = new Random(seed);

@@ -20,7 +20,6 @@ Rectangle box;
 
 
 main() {
-  d = new DLL();
   c = document.getElementById("draw");
   ctx = c.getContext("2d");
 
@@ -87,9 +86,6 @@ draw(Voronoi v) {
     if(e.start != null && e.end != null) {
       Vector2 start = e.start;
       Vector2 end = e.end;
-
-      double angle = 5 * PI / 6;
-      angle = atan2((end.y - start.y), (end.x - start.x)) - angle;
 
       ctx.beginPath();
       ctx.moveTo(start.x, start.y);
