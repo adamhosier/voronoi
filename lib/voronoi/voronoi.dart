@@ -1,7 +1,7 @@
 library voronoi;
 
 import "dart:math";
-import "package:vor/structs/pq.dart";
+import "package:vor/structs/priorityQueue.dart";
 import "package:vor/geometry/geometry.dart";
 
 part "dcel.dart";
@@ -11,7 +11,7 @@ class Voronoi {
 
   static double Epsilon = 0.0001;
 
-  PQ<VoronoiEvent> _q;
+  PriorityQueue<VoronoiEvent> _q;
   BST _t;
   DCEL _d;
   List<VoronoiSite> _sites;
@@ -27,13 +27,13 @@ class Voronoi {
 
   Rectangle boundingBox;
 
-  PQ<VoronoiEvent> get q => _q;
+  PriorityQueue<VoronoiEvent> get q => _q;
   BST get t => _t;
 
   Voronoi(List<Vector2> pts, this.boundingBox, {start : true}) {
 
     // init structures
-    _q = new PQ();
+    _q = new PriorityQueue();
     _t = new BST();
     _d = new DCEL();
     _sites = pts.map((Vector2 pt) => new VoronoiSite(pt)).toList();
@@ -56,12 +56,11 @@ class Voronoi {
 
   void nextEvent() {
     if(_q.isNotEmpty) {
-      _handleEvent(_q.pop());
+      _handleEvent(_q.pop);
     }
   }
 
   void bindToBox() {
-    Clipper c = new Clipper(boundingBox);
     _t.internalNodes.forEach((BSTInternalNode node) {
       HalfEdge e = node.edge;
       // add vertices for infinite edges
@@ -75,36 +74,10 @@ class Voronoi {
     });
 
     // trim edges
+    Clipper c = new Clipper(boundingBox);
     _d.edges.removeWhere((HalfEdge e) => c.isOutside(e.start, e.end));
     _d.vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(new Point(v.p.x, v.p.y)));
-    _d.edges.forEach((HalfEdge e) {
-      while (true) {
-        int code = c.getOutCode(e.start);
-        if (code & Clipper.BOTTOM > 0) {
-          e.o = new Vertex(new Vector2(e.start.x +
-              (e.end.x - e.start.x) * (boundingBox.bottom - e.start.y) /
-                  (e.end.y - e.start.y), boundingBox.bottom));
-          e.twin.next = null;
-        } else if (code & Clipper.TOP > 0) {
-          e.o = new Vertex(new Vector2(e.start.x +
-              (e.end.x - e.start.x) * (boundingBox.top - e.start.y) /
-                  (e.end.y - e.start.y), boundingBox.top));
-          e.twin.next = null;
-        } else if (code & Clipper.LEFT > 0) {
-          e.o = new Vertex(new Vector2(boundingBox.left, e.start.y +
-              (e.end.y - e.start.y) * (boundingBox.left - e.start.x) /
-                  (e.end.x - e.start.x)));
-          e.twin.next = null;
-        } else if (code & Clipper.RIGHT > 0) {
-          e.o = new Vertex(new Vector2(boundingBox.right, e.start.y +
-              (e.end.y - e.start.y) * (boundingBox.right - e.start.x) /
-                  (e.end.x - e.start.x)));
-          e.twin.next = null;
-        } else {
-          break;
-        }
-      }
-    });
+    _d.edges.forEach(c.clip);
 
     // close edges
     HalfEdge start = _d.edges.firstWhere((HalfEdge e) => e.prev == null);
@@ -115,17 +88,17 @@ class Voronoi {
       // find loose edge
       while (curr.next != null) curr = curr.next;
 
+      HalfEdge e1 = _d.newEdge();
+      HalfEdge e2 = _d.newEdge();
+      e1.twin = e2;
+      e1.o = curr.twin.o;
       // deal with corner cases
       if (curr.end.x != start.start.x && curr.end.y != start.start.y) {
-        HalfEdge e1 = _d.newEdge();
-        HalfEdge e2 = _d.newEdge();
         HalfEdge e3 = _d.newEdge();
         HalfEdge e4 = _d.newEdge();
-        e1.twin = e2;
         e3.twin = e4;
         e1.next = e3;
         e3.next = start;
-        e1.o = curr.twin.o;
         e4.o = start.o;
         curr.next = e1;
         Vertex cornerVertex = (curr.end.x > start.start.x) ?
@@ -134,18 +107,12 @@ class Voronoi {
         e2.o = cornerVertex;
         e3.o = cornerVertex;
       } else {
-        // create new edges for outside box
-        HalfEdge e1 = _d.newEdge();
-        HalfEdge e2 = _d.newEdge();
-        e1.twin = e2;
-        e1.o = curr.twin.o;
         e2.o = start.o;
 
         // set pointers between them
         curr.next = e1;
         e1.next = start;
         e2.prev = prev;
-
         prev = e2;
       }
 

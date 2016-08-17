@@ -3,6 +3,8 @@ part of geometry;
 class Vector2 {
   double x, y;
 
+  static Vector2 Zero = new Vector2(0.0,0.0);
+
   Vector2(this.x, this.y);
 
   Vector2 operator +(Vector2 other) => new Vector2(x + other.x, y + other.y);

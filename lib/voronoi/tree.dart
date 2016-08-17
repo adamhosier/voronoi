@@ -90,7 +90,7 @@ class BST {
     return result + new Vector2(aSite.x, sweep);
   }
 
-  // n sq time - try not to use this when not debugging
+  // EXPENSIVE - do not use this unless debugging
   List<Vector2> _findBreakpoints(BSTNode node, double y, List<Vector2> result) {
     if(node is BSTInternalNode) {
       _findBreakpoints(node.l, y, result);
@@ -185,7 +185,6 @@ class BSTInternalNode extends BSTNode {
 }
 
 class BSTLeaf extends BSTNode {
-  BSTInternalNode parent;
   VoronoiSite site;
   VoronoiCircleEvent event;
 

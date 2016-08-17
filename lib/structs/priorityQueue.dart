@@ -1,19 +1,15 @@
 library pq;
 
-class PQ<E extends Comparable> {
+class PriorityQueue<E extends Comparable> {
 
   List<E> data = new List<E>();
 
   bool get isEmpty {
-    return data.length == 0;
+    return data.isEmpty;
   }
 
   bool get isNotEmpty {
     return !isEmpty;
-  }
-
-  E get peek {
-    return isEmpty ? null : data[0];
   }
 
   void clear() {
@@ -24,12 +20,22 @@ class PQ<E extends Comparable> {
     iterable.forEach(this.push);
   }
 
-  void push(E value) {
-    data.add(value);
-    _bubbleUp(data.length - 1);
+  void push(Object value) {
+    if(!(value is Comparable))
+      throw new ArgumentError("Priority queue requires comparable types");
+    try {
+      data.add(value);
+      _bubbleUp(data.length - 1);
+    } catch(_) {
+      throw new ArgumentError("Prioriy queue requires consistent value types");
+    }
   }
 
-  E pop() {
+  E get peek => isEmpty ? null : data[0];
+
+  E get pop {
+    if(isEmpty) return null;
+
     E val = peek;
 
     data[0] = data.last;
@@ -50,7 +56,7 @@ class PQ<E extends Comparable> {
   }
 
   void _bubbleDown(int root) {
-    if(!isLeaf(root)) {
+    if(!_isLeaf(root)) {
       // select greatest child
       int child = _leftChild(root);
       if(_hasRightChild(root)) {
@@ -73,7 +79,7 @@ class PQ<E extends Comparable> {
     data[i] = tmp;
   }
 
-  bool isLeaf(int i) => !_hasLeftChild(i);
+  bool _isLeaf(int i) => !_hasLeftChild(i);
   bool _hasLeftChild(int i) => data.length >= 2 * i + 2;
   bool _hasRightChild(int i) => data.length >= 2 * i + 3;
 
@@ -81,23 +87,14 @@ class PQ<E extends Comparable> {
   int _rightChild(int i) => 2 * i + 2;
   int _parent(int i) => (i - 1) ~/ 2;
 
-  List<E> toList({bool growable}) {
-    List<E> l = new List<E>();
-    PQ<E> clone = this.clone();
-    while(clone.isNotEmpty) {
-      l.add(clone.pop());
-    }
+  List<E> toList() {
+    List l = new List();
+    while(isNotEmpty) l.insert(0, pop);
     return l;
   }
 
-  PQ<E> clone() {
-    PQ<E> clone = new PQ<E>();
-    clone.data = new List.from(data);
-    return clone;
-  }
-
   String toString() {
-    return "PQ " + data.toString();
+    return "Priority Queue " + data.toString();
   }
 
 }

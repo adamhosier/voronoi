@@ -28,7 +28,7 @@ class DCEL {
 class HalfEdge {
   Vertex o; //origin
   HalfEdge _twin;
-  _Face face;
+  Face face;
   HalfEdge _next;
   HalfEdge _prev;
 
@@ -58,10 +58,10 @@ class HalfEdge {
   }
 }
 
-class _Face {
+class Face {
   HalfEdge edge;
 
-  _Face(this.edge);
+  Face(this.edge);
 }
 
 class Vertex {

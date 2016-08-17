@@ -31,4 +31,34 @@ class Clipper {
     else if((o1 & o2) != 0) return true; // both points share a non-visable region
     else return false;
   }
+
+  void clip(HalfEdge e) {
+    while (true) {
+      int code = getOutCode(e.start);
+      if (code & Clipper.BOTTOM > 0) {
+        e.o = new Vertex(new Vector2(e.start.x +
+            (e.end.x - e.start.x) * (_r.bottom - e.start.y) /
+                (e.end.y - e.start.y), _r.bottom));
+        e.twin.next = null;
+      } else if (code & Clipper.TOP > 0) {
+        e.o = new Vertex(new Vector2(e.start.x +
+            (e.end.x - e.start.x) * (_r.top - e.start.y) /
+                (e.end.y - e.start.y), _r.top));
+        e.twin.next = null;
+      } else if (code & Clipper.LEFT > 0) {
+        e.o = new Vertex(new Vector2(_r.left, e.start.y +
+            (e.end.y - e.start.y) * (_r.left - e.start.x) /
+                (e.end.x - e.start.x)));
+        e.twin.next = null;
+      } else if (code & Clipper.RIGHT > 0) {
+        e.o = new Vertex(new Vector2(_r.right, e.start.y +
+            (e.end.y - e.start.y) * (_r.right - e.start.x) /
+                (e.end.x - e.start.x)));
+        e.twin.next = null;
+      } else {
+        return;
+      }
+    }
+  }
+
 }
