@@ -4,16 +4,16 @@ import "dart:math";
 import "package:vor/structs/priorityQueue.dart";
 import "package:vor/geometry/geometry.dart";
 
-part "dcel.dart";
-part "tree.dart";
+part "doublyConnectedEdgeList.dart";
+part "beachLine.dart";
 
 class Voronoi {
 
   static double Epsilon = 0.0001;
 
-  PriorityQueue<VoronoiEvent> _q;
-  BST _t;
-  DCEL _d;
+  PriorityQueue<VoronoiEvent> _queue;
+  BeachLine _beach;
+  DoublyConnectedEdgeList _d;
   List<VoronoiSite> _sites;
   List<Circle> circles;
 
@@ -22,32 +22,32 @@ class Voronoi {
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
   List<Vector2> get vertices => _d.vertices.map((Vertex v) => v.p).toList();
   List<HalfEdge> get edges => _d.edges;
-  List<Vector2> get beachBreakpoints => _t.getBreakpoints(sweep);
-  DCEL get dcel => _d;
+  List<Vector2> get beachBreakpoints => _beach.getBreakpoints(sweep);
+  DoublyConnectedEdgeList get dcel => _d;
 
   Rectangle boundingBox;
 
-  PriorityQueue<VoronoiEvent> get q => _q;
-  BST get t => _t;
+  PriorityQueue<VoronoiEvent> get q => _queue;
+  BeachLine get t => _beach;
 
   Voronoi(List<Vector2> pts, this.boundingBox, {start : true}) {
 
     // init structures
-    _q = new PriorityQueue();
-    _t = new BST();
-    _d = new DCEL();
+    _queue = new PriorityQueue();
+    _beach = new BeachLine();
+    _d = new DoublyConnectedEdgeList();
     _sites = pts.map((Vector2 pt) => new VoronoiSite(pt)).toList();
     circles = new List();
 
     // add each point to event queue based on y coord
-    _sites.forEach((VoronoiSite s) => _q.push(new VoronoiSiteEvent(s)));
+    _sites.forEach((VoronoiSite s) => _queue.push(new VoronoiSiteEvent(s)));
 
     // start processing events
     if(start) generate();
   }
 
   void generate() {
-    while(_q.isNotEmpty) {
+    while(_queue.isNotEmpty) {
       nextEvent();
     }
     if(sweep < boundingBox.bottom) _handleEvent(new VoronoiNullEvent(boundingBox.bottom));
@@ -55,28 +55,28 @@ class Voronoi {
   }
 
   void nextEvent() {
-    if(_q.isNotEmpty) {
-      _handleEvent(_q.pop);
+    if(_queue.isNotEmpty) {
+      _handleEvent(_queue.pop);
     }
   }
 
   void bindToBox() {
-    _t.internalNodes.forEach((BSTInternalNode node) {
+    _beach.internalNodes.forEach((BSTInternalNode node) {
       HalfEdge e = node.edge;
       // add vertices for infinite edges
-      Vector2 p = _t.findBreakpoint(node, sweep);
-      int ratio = 1;
-      while(boundingBox.containsPoint(new Point(p.x*ratio, p.y*ratio))) {
+      Vector2 p = _beach.findBreakpoint(node, sweep);
+      double ratio = 1.0;
+      while(boundingBox.containsPoint((p * ratio).asPoint)) {
         // extend to outside the box arbitrarily, we will clip it back later
         ratio *= 2;
       }
-      e.twin.o = _d.newVert(new Vector2(p.x*ratio, p.y*ratio));
+      e.twin.o = _d.newVert(p * ratio);
     });
 
     // trim edges
     Clipper c = new Clipper(boundingBox);
     _d.edges.removeWhere((HalfEdge e) => c.isOutside(e.start, e.end));
-    _d.vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(new Point(v.p.x, v.p.y)));
+    _d.vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(v.p.asPoint));
     _d.edges.forEach(c.clip);
 
     // close edges
@@ -127,10 +127,10 @@ class Voronoi {
   }
 
   void _handleSiteEvent(VoronoiSite s) {
-    if(_t.isEmpty) {
-      _t.root = new BSTLeaf(s);
+    if(_beach.isEmpty) {
+      _beach.root = new BSTLeaf(s);
     } else {
-      BSTLeaf closest = _t.search(s);
+      BSTLeaf closest = _beach.search(s);
 
       // if circle has an event, mark it as a false alarm
       _checkFalseAlarm(closest);
@@ -152,7 +152,7 @@ class Voronoi {
       newSubTree.b = closest.site;
 
       if(closest.parent == null) {
-        _t.root = newTree;
+        _beach.root = newTree;
       } else if(closest.parent.l == closest) {
         closest.parent.l = newTree;
       } else {
@@ -180,7 +180,7 @@ class Voronoi {
 
     BSTLeaf leaf = e.arc;
     BSTInternalNode oldNode = leaf.parent;
-    BSTInternalNode brokenNode = _t.findBrokenNode(e.c.o, e.y);
+    BSTInternalNode brokenNode = _beach.findBrokenNode(e.c.o, e.y);
     bool oldLeftOfBroken = oldNode.isInLeftSubtreeOf(brokenNode);
 
     // events
@@ -253,7 +253,7 @@ class Voronoi {
       Circle cir = new Circle(o, (a.pos - o).magnitude);
       circles.add(cir);
       VoronoiCircleEvent e = new VoronoiCircleEvent(cir);
-      _q.push(e);
+      _queue.push(e);
       b.event = e;
       e.arc = b;
     }

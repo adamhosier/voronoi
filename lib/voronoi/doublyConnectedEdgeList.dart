@@ -1,6 +1,6 @@
 part of voronoi;
 
-class DCEL {
+class DoublyConnectedEdgeList {
   List<Vertex> vertices = new List();
   List<HalfEdge> edges = new List();
 
@@ -51,10 +51,6 @@ class HalfEdge {
   void set twin(HalfEdge t) {
     this._twin = t;
     t._twin = this;
-  }
-
-  String toString() {
-    return "Edge start: $start, end $end";
   }
 }
 

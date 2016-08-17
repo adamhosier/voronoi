@@ -1,13 +1,12 @@
 part of voronoi;
 
-class BST {
+class BeachLine {
   BSTNode root;
-
-  BST();
 
   bool get isEmpty => root == null;
   bool get isNotEmpty => !isEmpty;
 
+  // Gathers a list of all internal nodes, tree is walked in-order
   List<BSTInternalNode> get internalNodes {
     return _getInternalNodes(root);
   }
@@ -23,36 +22,32 @@ class BST {
     return [];
   }
 
-  getBreakpoints(double y) {
-    return _findBreakpoints(root, y, []);
+  // Finds all breakpoints on the beach line when the sweep line is in position [y]
+  List<Vector2> getBreakpoints(double y) {
+    return internalNodes.map((BSTInternalNode n) => findBreakpoint(n, y));
   }
 
+  // Finds the leaf associated with site [s]
   BSTLeaf search(VoronoiSite s) {
     return _search(root, s);
   }
 
   BSTLeaf _search(BSTNode node, VoronoiSite s) {
-    if(node is BSTLeaf) {
-      return node;
-    } else if (node is BSTInternalNode){
-      double x = _findBreakpoint(node.a, node.b, s.y).x;
-      if(s.x < x) {
-        return _search(node.l, s);
-      } else {
-        return _search(node.r, s);
-      }
-    }
-    return null;
+    // for internal nodes, calculate breakpoint and compare it to s, then recurse accordingly
+    if (node is BSTInternalNode) return _search(s.x < findBreakpoint(node, s.y).x ? node.l : node.r, s);
+
+    // we must have hit a leaf (base case)
+    return node;
   }
 
+  // Searches the tree for the node that needs to be changed on a circle event
   BSTInternalNode findBrokenNode(Vector2 v, double sweep) {
     return _findBrokenNode(root, v, sweep);
   }
 
   BSTInternalNode _findBrokenNode(BSTNode node, Vector2 v, double sweep) {
     if(node is BSTInternalNode) {
-      double x = _findBreakpoint(node.a, node.b, sweep).x;
-      double diff = v.x - x;
+      double diff = v.x - findBreakpoint(node, sweep).x;
       if(diff < -Voronoi.Epsilon) {
         return _findBrokenNode(node.l, v, sweep);
       } else if(diff.abs() < Voronoi.Epsilon) {
@@ -65,18 +60,14 @@ class BST {
   }
 
   Vector2 findBreakpoint(BSTInternalNode node, double sweep) {
-    return _findBreakpoint(node.a, node.b, sweep);
-  }
-
-  Vector2 _findBreakpoint(VoronoiSite aSite, VoronoiSite bSite, double sweep) {
     // transform into new plane
-    Vector2 a = new Vector2(0.0, sweep - aSite.y);
-    Vector2 b = new Vector2(bSite.x - aSite.x, sweep - bSite.y);
+    Vector2 a = new Vector2(0.0, sweep - node.a.y);
+    Vector2 b = new Vector2(node.b.x - node.a.x, sweep - node.b.y);
 
     // if point lies on sweep line
-    if(b.y == 0) return new Vector2(bSite.x, sweep);
-    if(a.y == 0) return new Vector2(aSite.x, sweep);
-    if((a.y - b.y).abs() < Voronoi.Epsilon) return new Vector2((aSite.x + bSite.x) / 2, sweep);
+    if(b.y == 0) return new Vector2(node.b.x, sweep);
+    if(a.y == 0) return new Vector2(node.a.x, sweep);
+    if((a.y - b.y).abs() < Voronoi.Epsilon) return new Vector2((node.a.x + node.b.x) / 2, sweep);
 
     // calculate intersection
     double na = b.y - a.y;
@@ -87,21 +78,8 @@ class BST {
     Vector2 result = new Vector2(x, y);
 
     // transform back
-    return result + new Vector2(aSite.x, sweep);
+    return result + new Vector2(node.a.x, sweep);
   }
-
-  // EXPENSIVE - do not use this unless debugging
-  List<Vector2> _findBreakpoints(BSTNode node, double y, List<Vector2> result) {
-    if(node is BSTInternalNode) {
-      _findBreakpoints(node.l, y, result);
-
-      result.add(_findBreakpoint(node.a, node.b, y));
-
-      _findBreakpoints(node.r, y, result);
-    }
-    return result;
-  }
-
 }
 
 abstract class BSTNode {
@@ -121,7 +99,7 @@ abstract class BSTNode {
   }
 
   BSTNode get uncle {
-    if(parent?.hasParent) {
+    if(hasParent && parent.hasParent) {
       if(parent.parent.r == parent) return parent.parent.l;
       else return parent.parent.r;
     }

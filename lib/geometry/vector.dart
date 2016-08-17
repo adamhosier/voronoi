@@ -6,6 +6,7 @@ class Vector2 {
   static Vector2 Zero = new Vector2(0.0,0.0);
 
   Vector2(this.x, this.y);
+  Vector2.fromPoint(Point p) : super(p.x, p.y) {}
 
   Vector2 operator +(Vector2 other) => new Vector2(x + other.x, y + other.y);
   Vector2 operator -(Vector2 other) => new Vector2(x - other.x, y - other.y);
@@ -13,6 +14,7 @@ class Vector2 {
   Vector2 operator /(double amt) => new Vector2(x / amt, y / amt);
 
   double get magnitude => sqrt(x * x + y * y);
+  Point get asPoint => new Point(x, y);
 
   String toString() {
     return "($x, $y)";
