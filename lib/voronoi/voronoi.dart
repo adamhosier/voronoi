@@ -3,6 +3,7 @@ library voronoi;
 import "dart:math";
 import "package:vor/structs/priorityQueue.dart";
 import "package:vor/geometry/geometry.dart";
+import 'package:vor/structs/leafedTree.dart';
 
 part "doublyConnectedEdgeList.dart";
 part "beachLine.dart";
@@ -23,14 +24,16 @@ class Voronoi {
   List<Vector2> get vertices => _d.vertices.map((Vertex v) => v.p).toList();
   List<HalfEdge> get edges => _d.edges;
   List<Vector2> get beachBreakpoints => _beach.getBreakpoints(sweep);
+  List<Face> get faces => _d.faces;
   DoublyConnectedEdgeList get dcel => _d;
 
-  Rectangle boundingBox;
+  Rectangle<double> boundingBox;
 
   PriorityQueue<VoronoiEvent> get q => _queue;
   BeachLine get t => _beach;
 
   Voronoi(List<Vector2> pts, this.boundingBox, {start : true}) {
+    if(pts.length == 0) throw new ArgumentError("Voronoi diagram must contain at least 1 site");
 
     // init structures
     _queue = new PriorityQueue();
@@ -61,16 +64,16 @@ class Voronoi {
   }
 
   void bindToBox() {
-    _beach.internalNodes.forEach((BSTInternalNode node) {
+    _beach.tree.internalNodes.forEach((BeachInternalNode node) {
       HalfEdge e = node.edge;
       // add vertices for infinite edges
-      Vector2 p = _beach.findBreakpoint(node, sweep);
+      Vector2 p = _beach.calculateBreakpoint(node.a, node.b, sweep);
       double ratio = 1.0;
       while(boundingBox.containsPoint((p * ratio).asPoint)) {
         // extend to outside the box arbitrarily, we will clip it back later
         ratio *= 2;
       }
-      e.twin.o = _d.newVert(p * ratio);
+      e.twin.o = _d.newVertex(p * ratio);
     });
 
     // trim edges
@@ -102,8 +105,8 @@ class Voronoi {
         e4.o = start.o;
         curr.next = e1;
         Vertex cornerVertex = (curr.end.x > start.start.x) ?
-          (curr.end.y > start.start.y) ? _d.newVert(new Vector2(curr.end.x, start.start.y)) : _d.newVert(new Vector2(start.start.x, curr.end.y)) :
-          (curr.end.y < start.start.y) ? _d.newVert(new Vector2(curr.end.x, start.start.y)) : _d.newVert(new Vector2(start.start.x, curr.end.y));
+          (curr.end.y > start.start.y) ? _d.newVertex(new Vector2(curr.end.x, start.start.y)) : _d.newVertex(new Vector2(start.start.x, curr.end.y)) :
+          (curr.end.y < start.start.y) ? _d.newVertex(new Vector2(curr.end.x, start.start.y)) : _d.newVertex(new Vector2(start.start.x, curr.end.y));
         e2.o = cornerVertex;
         e3.o = cornerVertex;
       } else {
@@ -128,19 +131,19 @@ class Voronoi {
 
   void _handleSiteEvent(VoronoiSite s) {
     if(_beach.isEmpty) {
-      _beach.root = new BSTLeaf(s);
+      _beach.tree.root = new BeachLeaf(s);
     } else {
-      BSTLeaf closest = _beach.search(s);
+      BeachLeaf closest = _beach.findLeaf(s.x, sweep);
 
       // if circle has an event, mark it as a false alarm
       _checkFalseAlarm(closest);
 
       // grow the tree
-      BSTInternalNode newTree = new BSTInternalNode();
-      BSTInternalNode newSubTree = new BSTInternalNode();
-      BSTLeaf leafL = closest.clone();
-      BSTLeaf leafM = new BSTLeaf(s);
-      BSTLeaf leafR = closest.clone();
+      BeachInternalNode newTree = new BeachInternalNode();
+      BeachInternalNode newSubTree = new BeachInternalNode();
+      BeachLeaf leafL = closest.clone();
+      BeachLeaf leafM = new BeachLeaf(s);
+      BeachLeaf leafR = closest.clone();
 
       newTree.l = leafL;
       newTree.r = newSubTree;
@@ -152,7 +155,7 @@ class Voronoi {
       newSubTree.b = closest.site;
 
       if(closest.parent == null) {
-        _beach.root = newTree;
+        _beach.tree.root = newTree;
       } else if(closest.parent.l == closest) {
         closest.parent.l = newTree;
       } else {
@@ -178,14 +181,14 @@ class Voronoi {
       return;
     }
 
-    BSTLeaf leaf = e.arc;
-    BSTInternalNode oldNode = leaf.parent;
-    BSTInternalNode brokenNode = _beach.findBrokenNode(e.c.o, e.y);
+    BeachLeaf leaf = e.arc;
+    BeachInternalNode oldNode = leaf.parent;
+    BeachInternalNode brokenNode = _beach.findInternalNode(e.c.o.x, sweep);
     bool oldLeftOfBroken = oldNode.isInLeftSubtreeOf(brokenNode);
 
     // events
-    BSTLeaf leafL = leaf.leftLeaf;
-    BSTLeaf leafR = leaf.rightLeaf;
+    BeachLeaf leafL = leaf.leftLeaf;
+    BeachLeaf leafR = leaf.rightLeaf;
     _checkFalseAlarm(leafL);
     _checkFalseAlarm(leafR);
 
@@ -197,11 +200,11 @@ class Voronoi {
     }
 
     // update node referencing old arc (fix broken node)
-    brokenNode.a = brokenNode.l.rightMostLeaf.site;
-    brokenNode.b = brokenNode.r.leftMostLeaf.site;
+    brokenNode.a = (brokenNode.l.rightMostLeaf as BeachLeaf).site;
+    brokenNode.b = (brokenNode.r.leftMostLeaf as BeachLeaf).site;
 
     // diagram
-    Vertex v = _d.newVert(e.c.o);
+    Vertex v = _d.newVertex(e.c.o);
     HalfEdge e1 = _d.newEdge();
     HalfEdge e2 = _d.newEdge();
     e1.twin = e2;
@@ -231,14 +234,14 @@ class Voronoi {
     _checkTriple(leafR.leftLeaf, leafR, leafR.rightLeaf);
   }
 
-  void _checkFalseAlarm(BSTLeaf leaf) {
+  void _checkFalseAlarm(BeachLeaf leaf) {
     if(leaf.event != null) {
       leaf.event.isFalseAlarm = true;
       circles.remove(leaf.event.c);
     }
   }
 
-  void _checkTriple(BSTLeaf a, BSTLeaf b, BSTLeaf c) {
+  void _checkTriple(BeachLeaf a, BeachLeaf b, BeachLeaf c) {
     if(a == null || b == null || c == null) return;
 
     double syden = 2 * ((a.y - b.y)*(b.x - c.x) - (b.y - c.y)*(a.x - b.x));
@@ -279,7 +282,7 @@ class VoronoiSiteEvent extends VoronoiEvent {
 
 class VoronoiCircleEvent extends VoronoiEvent {
   Circle c;
-  BSTLeaf arc;
+  BeachLeaf arc;
   bool isFalseAlarm = false;
 
   double get y => c.bottom;

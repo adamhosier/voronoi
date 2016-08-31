@@ -23,7 +23,7 @@ class PoissonDiskSampler extends Sampler {
     int boxCols = (_rect.width / boxSize).ceil();
     int boxRows = (_rect.height / boxSize).ceil();
 
-    // grid of active sampels
+    // grid of active samples
     List<List<Vector2>> grid = new List();
     for(int i = 0; i < boxCols; i++) grid.add(new List(boxRows));
 

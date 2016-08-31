@@ -59,12 +59,11 @@ main() {
 }
 
 Voronoi getVoronoi() {
-  return new Voronoi(getPoints(NUM_POINTS), box, start:false);
+  return new Voronoi(getPoints(NUM_POINTS), box);
 }
 
 List<Vector2> getPoints(int amt) {
   Sampler s = new PoissonDiskSampler(box);
-
   return s.generatePoints(amt);
 }
 

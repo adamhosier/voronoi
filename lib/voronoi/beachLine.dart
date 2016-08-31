@@ -1,73 +1,40 @@
 part of voronoi;
 
 class BeachLine {
-  BSTNode root;
+  LeafedTree<BeachInternalNode, BeachLeaf> _tree = new LeafedTree();
+  LeafedTree get tree => _tree;
 
-  bool get isEmpty => root == null;
-  bool get isNotEmpty => !isEmpty;
-
-  // Gathers a list of all internal nodes, tree is walked in-order
-  List<BSTInternalNode> get internalNodes {
-    return _getInternalNodes(root);
-  }
-
-  List<BSTInternalNode> _getInternalNodes(BSTNode node) {
-    if(node is BSTInternalNode) {
-      List<BSTInternalNode> nodes = new List();
-      nodes.addAll(_getInternalNodes(node.l));
-      nodes.add(node);
-      nodes.addAll(_getInternalNodes(node.r));
-      return nodes;
-    }
-    return [];
-  }
+  bool get isEmpty => tree.isEmpty;
 
   // Finds all breakpoints on the beach line when the sweep line is in position [y]
   List<Vector2> getBreakpoints(double y) {
-    return internalNodes.map((BSTInternalNode n) => findBreakpoint(n, y));
+    return _tree.internalNodes.map((BeachInternalNode n) => calculateBreakpoint(n.a, n.b, y));
   }
 
-  // Finds the leaf associated with site [s]
-  BSTLeaf search(VoronoiSite s) {
-    return _search(root, s);
+  // Finds the leaf associated with site that has x coordinate [x], when the sweepline is at [y]
+  BeachLeaf findLeaf(double x, double sweep) {
+    return _tree.findLeaf(x, (BeachInternalNode node, double x) {
+      return x < calculateBreakpoint(node.a, node.b, sweep).x;
+    });
   }
 
-  BSTLeaf _search(BSTNode node, VoronoiSite s) {
-    // for internal nodes, calculate breakpoint and compare it to s, then recurse accordingly
-    if (node is BSTInternalNode) return _search(s.x < findBreakpoint(node, s.y).x ? node.l : node.r, s);
-
-    // we must have hit a leaf (base case)
-    return node;
+  // Finds the internal node representing the breakpoint with x coordinate [x] when the sweepline is at [y]
+  BeachInternalNode findInternalNode(double x, double sweep) {
+    return _tree.findInternalNode(x, (BeachInternalNode node, double x) {
+      double diff = x - calculateBreakpoint(node.a, node.b, sweep).x;
+      return diff < -Voronoi.Epsilon ? -1 : (diff.abs() < Voronoi.Epsilon ? 0 : 1);
+    });
   }
 
-  // Searches the tree for the node that needs to be changed on a circle event
-  BSTInternalNode findBrokenNode(Vector2 v, double sweep) {
-    return _findBrokenNode(root, v, sweep);
-  }
-
-  BSTInternalNode _findBrokenNode(BSTNode node, Vector2 v, double sweep) {
-    if(node is BSTInternalNode) {
-      double diff = v.x - findBreakpoint(node, sweep).x;
-      if(diff < -Voronoi.Epsilon) {
-        return _findBrokenNode(node.l, v, sweep);
-      } else if(diff.abs() < Voronoi.Epsilon) {
-        return node;
-      } else {
-        return _findBrokenNode(node.r, v, sweep);
-      }
-    }
-    return null;
-  }
-
-  Vector2 findBreakpoint(BSTInternalNode node, double sweep) {
+  Vector2 calculateBreakpoint(VoronoiSite aSite, VoronoiSite bSite, double sweep) {
     // transform into new plane
-    Vector2 a = new Vector2(0.0, sweep - node.a.y);
-    Vector2 b = new Vector2(node.b.x - node.a.x, sweep - node.b.y);
+    Vector2 a = new Vector2(0.0, sweep - aSite.y);
+    Vector2 b = new Vector2(bSite.x - aSite.x, sweep - bSite.y);
 
     // if point lies on sweep line
-    if(b.y == 0) return new Vector2(node.b.x, sweep);
-    if(a.y == 0) return new Vector2(node.a.x, sweep);
-    if((a.y - b.y).abs() < Voronoi.Epsilon) return new Vector2((node.a.x + node.b.x) / 2, sweep);
+    if(b.y == 0) return new Vector2(bSite.x, sweep);
+    if(a.y == 0) return new Vector2(aSite.x, sweep);
+    if((a.y - b.y).abs() < Voronoi.Epsilon) return new Vector2((aSite.x + bSite.x) / 2, sweep);
 
     // calculate intersection
     double na = b.y - a.y;
@@ -78,106 +45,27 @@ class BeachLine {
     Vector2 result = new Vector2(x, y);
 
     // transform back
-    return result + new Vector2(node.a.x, sweep);
+    return result + new Vector2(aSite.x, sweep);
   }
 }
 
-abstract class BSTNode {
-  BSTInternalNode parent;
-
-  BSTLeaf get leftMostLeaf;
-  BSTLeaf get rightMostLeaf;
-
-  bool get hasParent => this.parent != null;
-
-  BSTNode get brother {
-    if(hasParent) {
-      if(parent.r == this) return parent.l;
-      else return parent.r;
-    }
-    return null;
-  }
-
-  BSTNode get uncle {
-    if(hasParent && parent.hasParent) {
-      if(parent.parent.r == parent) return parent.parent.l;
-      else return parent.parent.r;
-    }
-    return null;
-  }
-
-  BSTLeaf get leftLeaf {
-    if(hasParent) {
-      if(parent.r == this) return parent.l.rightMostLeaf;
-      else return parent.leftLeaf;
-    }
-    return null;
-  }
-
-  BSTLeaf get rightLeaf {
-    if(hasParent) {
-      if (parent.l == this) return parent.r.leftMostLeaf;
-      else return parent.rightLeaf;
-    }
-    return null;
-  }
-
-}
-
-class BSTInternalNode extends BSTNode {
-  BSTNode _l, _r;
+class BeachInternalNode extends TreeInternalNode {
   VoronoiSite a, b;
   HalfEdge edge;
-
-  BSTNode get l => _l;
-  BSTNode get r => _r;
-
-  BSTLeaf get leftMostLeaf => l.leftMostLeaf;
-  BSTLeaf get rightMostLeaf => r.rightMostLeaf;
-
-  void set l(BSTNode n) {
-    n.parent = this;
-    this._l = n;
-  }
-
-  void set r(BSTNode n) {
-    n.parent = this;
-    this._r = n;
-  }
-
-  bool isInRightSubtreeOf(BSTInternalNode root) {
-    if(parent == root) {
-      return parent.r == this;
-    } else {
-      return parent.isInRightSubtreeOf(root);
-    }
-  }
-
-  bool isInLeftSubtreeOf(BSTInternalNode root) {
-    if(parent == root) {
-      return parent.l == this;
-    } else {
-      return parent.isInLeftSubtreeOf(root);
-    }
-  }
 }
 
-class BSTLeaf extends BSTNode {
+class BeachLeaf extends TreeLeaf {
   VoronoiSite site;
   VoronoiCircleEvent event;
 
   double get x => site.x;
   double get y => site.y;
   Vector2 get pos => new Vector2(x, y);
-  bool get hasEvent => event == null;
 
-  BSTLeaf get leftMostLeaf => this;
-  BSTLeaf get rightMostLeaf => this;
+  BeachLeaf(this.site);
 
-  BSTLeaf(this.site);
-
-  BSTLeaf clone() {
-    BSTLeaf newLeaf = new BSTLeaf(this.site);
+  BeachLeaf clone() {
+    BeachLeaf newLeaf = new BeachLeaf(this.site);
     newLeaf.parent = parent;
     newLeaf.event = event;
     return newLeaf;

@@ -4,13 +4,15 @@ class DoublyConnectedEdgeList {
   List<Vertex> vertices = new List();
   List<HalfEdge> edges = new List();
 
+  List<Face> get faces => []; //TODO
+
   HalfEdge newEdge() {
     HalfEdge edge = new HalfEdge();
     edges.add(edge);
     return edge;
   }
 
-  Vertex newVert(Vector2 o) {
+  Vertex newVertex(Vector2 o) {
     Vertex vert = new Vertex(o);
     vertices.add(vert);
     return vert;
@@ -20,7 +22,7 @@ class DoublyConnectedEdgeList {
     edges.remove(e);
   }
 
-  void removeVert(Vertex v) {
+  void removeVertex(Vertex v) {
     vertices.remove(v);
   }
 }
