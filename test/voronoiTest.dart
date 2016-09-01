@@ -36,4 +36,10 @@ main() {
       expect(v.faces.length, equals(1));
     });
   });
+
+  group("Error checking", () {
+    test("Creating diagram with no input sites throws an error", () {
+      expect(() => new Voronoi([], new Rectangle(0.0,0.0,500.0,500.0)), throwsArgumentError);
+    });
+  });
 }

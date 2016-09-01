@@ -13,14 +13,14 @@ main() {
 
     test("Populated queue is not empty", () {
       LeafedTree q = new LeafedTree();
-      q.root = new TestLeaf();
+      q.root = new TestLeaf(0.0);
       expect(q.isEmpty, isFalse);
       expect(q.isNotEmpty, isTrue);
     });
 
     test("Cleared list is empty", () {
       LeafedTree q = new LeafedTree();
-      q.root = new TestLeaf();
+      q.root = new TestLeaf(0.0);
       q.clear();
       expect(q.isEmpty, isTrue);
     });
@@ -35,5 +35,11 @@ main() {
   });
 }
 
-class TestInternalNode extends TreeInternalNode {}
-class TestLeaf extends TreeLeaf {}
+class TestInternalNode extends TreeInternalNode {
+  double val;
+  TestInternalNode(this.val);
+}
+class TestLeaf extends TreeLeaf {
+  double val;
+  TestLeaf(this.val);
+}

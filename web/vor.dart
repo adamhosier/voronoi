@@ -14,7 +14,8 @@ Voronoi v;
 DLL d;
 Random rng = new Random();
 
-int NUM_POINTS = 500;
+int NUM_POINTS_DEFAULT = 500;
+int NUM_POINTS = Uri.base.queryParameters.containsKey("pts") ? int.parse(Uri.base.queryParameters["pts"]) : NUM_POINTS_DEFAULT;
 
 Rectangle box;
 

@@ -61,8 +61,10 @@ class BeachLeaf extends TreeLeaf {
   double get x => site.x;
   double get y => site.y;
   Vector2 get pos => new Vector2(x, y);
+  bool get hasEvent => event != null;
 
   BeachLeaf(this.site);
+
 
   BeachLeaf clone() {
     BeachLeaf newLeaf = new BeachLeaf(this.site);

@@ -12,6 +12,13 @@ class DoublyConnectedEdgeList {
     return edge;
   }
 
+  // creates a new edge that's a twin of [twin]
+  HalfEdge newTwinEdge(HalfEdge twin) {
+    HalfEdge edge = newEdge();
+    edge.twin = twin;
+    return edge;
+  }
+
   Vertex newVertex(Vector2 o) {
     Vertex vert = new Vertex(o);
     vertices.add(vert);
@@ -25,6 +32,57 @@ class DoublyConnectedEdgeList {
   void removeVertex(Vertex v) {
     vertices.remove(v);
   }
+
+  void bindTo(Rectangle boundingBox) {
+    // trim edges
+    Clipper c = new Clipper(boundingBox);
+    edges.removeWhere((HalfEdge e) => c.isOutside(e.start, e.end));
+    vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(v.p.asPoint));
+    edges.forEach(c.clip);
+
+    // close edges
+    HalfEdge start = edges.firstWhere((HalfEdge e) => e.prev == null);
+    HalfEdge end = start;
+    HalfEdge prev = null;
+    do {
+      HalfEdge curr = start;
+      // find loose edge
+      while (curr.next != null) curr = curr.next;
+
+      HalfEdge e1 = newEdge();
+      HalfEdge e2 = newTwinEdge(e1);
+      e1.o = curr.twin.o;
+      // deal with corner cases
+      if (curr.end.x != start.start.x && curr.end.y != start.start.y) {
+        HalfEdge e3 = newEdge();
+        HalfEdge e4 = newTwinEdge(e3);
+        e1.next = e3;
+        e3.next = start;
+        e4.o = start.o;
+        curr.next = e1;
+        Vertex cornerVertex = (curr.end.x > start.start.x) ?
+            curr.end.y > start.start.y ?
+                newVertex(new Vector2(curr.end.x, start.start.y)) :
+                newVertex(new Vector2(start.start.x, curr.end.y)) :
+            curr.end.y < start.start.y ?
+                newVertex(new Vector2(curr.end.x, start.start.y)) :
+                newVertex(new Vector2(start.start.x, curr.end.y));
+        e2.o = cornerVertex;
+        e3.o = cornerVertex;
+      } else {
+        e2.o = start.o;
+
+        // set pointers between them
+        curr.next = e1;
+        e1.next = start;
+        e2.prev = prev;
+        prev = e2;
+      }
+
+      start = curr.twin;
+    } while (start != end);
+  }
+
 }
 
 class HalfEdge {

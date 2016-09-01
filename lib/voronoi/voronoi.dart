@@ -49,21 +49,17 @@ class Voronoi {
     if(start) generate();
   }
 
+  // Processes all events, then cleans up after itself
   void generate() {
     while(_queue.isNotEmpty) {
       nextEvent();
     }
-    if(sweep < boundingBox.bottom) _handleEvent(new VoronoiNullEvent(boundingBox.bottom));
-    bindToBox();
+    _clean();
   }
 
-  void nextEvent() {
-    if(_queue.isNotEmpty) {
-      _handleEvent(_queue.pop);
-    }
-  }
-
-  void bindToBox() {
+  // Cleans up the diagram, adding a bounding box and removing redundant vertices/halfedges
+  void _clean() {
+    // stretch halfedges still inside box to the outside
     _beach.tree.internalNodes.forEach((BeachInternalNode node) {
       HalfEdge e = node.edge;
       // add vertices for infinite edges
@@ -75,53 +71,16 @@ class Voronoi {
       }
       e.twin.o = _d.newVertex(p * ratio);
     });
-
-    // trim edges
-    Clipper c = new Clipper(boundingBox);
-    _d.edges.removeWhere((HalfEdge e) => c.isOutside(e.start, e.end));
-    _d.vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(v.p.asPoint));
-    _d.edges.forEach(c.clip);
-
-    // close edges
-    HalfEdge start = _d.edges.firstWhere((HalfEdge e) => e.prev == null);
-    HalfEdge end = start;
-    HalfEdge prev = null;
-    do {
-      HalfEdge curr = start;
-      // find loose edge
-      while (curr.next != null) curr = curr.next;
-
-      HalfEdge e1 = _d.newEdge();
-      HalfEdge e2 = _d.newEdge();
-      e1.twin = e2;
-      e1.o = curr.twin.o;
-      // deal with corner cases
-      if (curr.end.x != start.start.x && curr.end.y != start.start.y) {
-        HalfEdge e3 = _d.newEdge();
-        HalfEdge e4 = _d.newEdge();
-        e3.twin = e4;
-        e1.next = e3;
-        e3.next = start;
-        e4.o = start.o;
-        curr.next = e1;
-        Vertex cornerVertex = (curr.end.x > start.start.x) ?
-          (curr.end.y > start.start.y) ? _d.newVertex(new Vector2(curr.end.x, start.start.y)) : _d.newVertex(new Vector2(start.start.x, curr.end.y)) :
-          (curr.end.y < start.start.y) ? _d.newVertex(new Vector2(curr.end.x, start.start.y)) : _d.newVertex(new Vector2(start.start.x, curr.end.y));
-        e2.o = cornerVertex;
-        e3.o = cornerVertex;
-      } else {
-        e2.o = start.o;
-
-        // set pointers between them
-        curr.next = e1;
-        e1.next = start;
-        e2.prev = prev;
-        prev = e2;
-      }
-
-      start = curr.twin;
-    } while (start != end);
+    // add bounding box to diagram
+    _d.bindTo(boundingBox);
   }
+
+  void nextEvent() {
+    if(_queue.isNotEmpty) {
+      _handleEvent(_queue.pop);
+    }
+  }
+
 
   void _handleEvent(VoronoiEvent e) {
     sweep = e.y;
@@ -164,8 +123,7 @@ class Voronoi {
 
       // update voronoi structure
       HalfEdge e1 = _d.newEdge();
-      HalfEdge e2 = _d.newEdge();
-      e1.twin = e2;
+      HalfEdge e2 = _d.newTwinEdge(e1);
       newTree.edge = e2;
       newSubTree.edge = e1;
 
@@ -177,9 +135,7 @@ class Voronoi {
 
   void _handleCircleEvent(VoronoiCircleEvent e) {
     //check for false alarm
-    if(e.isFalseAlarm) {
-      return;
-    }
+    if(e.isFalseAlarm) return;
 
     BeachLeaf leaf = e.arc;
     BeachInternalNode oldNode = leaf.parent;
@@ -206,8 +162,7 @@ class Voronoi {
     // diagram
     Vertex v = _d.newVertex(e.c.o);
     HalfEdge e1 = _d.newEdge();
-    HalfEdge e2 = _d.newEdge();
-    e1.twin = e2;
+    HalfEdge e2 = _d.newTwinEdge(e1);
 
     // connect structure
     if(oldLeftOfBroken) {
@@ -235,7 +190,7 @@ class Voronoi {
   }
 
   void _checkFalseAlarm(BeachLeaf leaf) {
-    if(leaf.event != null) {
+    if(leaf.hasEvent) {
       leaf.event.isFalseAlarm = true;
       circles.remove(leaf.event.c);
     }
