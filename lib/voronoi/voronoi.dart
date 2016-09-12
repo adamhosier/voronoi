@@ -39,7 +39,7 @@ class Voronoi {
     _queue = new PriorityQueue();
     _beach = new BeachLine();
     _d = new DoublyConnectedEdgeList();
-    _sites = pts.map((Vector2 pt) => new VoronoiSite(pt)).toList();
+    _sites = pts.map((Vector2 pt) => new VoronoiSite(pt, _d)).toList();
     circles = new List();
 
     // add each point to event queue based on y coord
@@ -69,6 +69,7 @@ class Voronoi {
         // extend to outside the box arbitrarily, we will clip it back later
         ratio *= 2;
       }
+      _d.removeVertex(e.twin.o);
       e.twin.o = _d.newVertex(p * ratio);
     });
     // add bounding box to diagram
@@ -123,7 +124,8 @@ class Voronoi {
 
       // update voronoi structure
       HalfEdge e1 = _d.newEdge();
-      HalfEdge e2 = _d.newTwinEdge(e1);
+      HalfEdge e2 = _d.newTwinEdgeForFace(e1, s.face);
+      closest.site.face.edge = e1;
       newTree.edge = e2;
       newSubTree.edge = e1;
 
@@ -140,7 +142,7 @@ class Voronoi {
     BeachLeaf leaf = e.arc;
     BeachInternalNode oldNode = leaf.parent;
     BeachInternalNode brokenNode = _beach.findInternalNode(e.c.o.x, sweep);
-    bool oldLeftOfBroken = oldNode.isInLeftSubtreeOf(brokenNode);
+    bool oldLeftOfBroken = oldNode.isInLeftSubtreeOf(brokenNode); //TODO: can this be done with a numerical comparison?
 
     // events
     BeachLeaf leafL = leaf.leftLeaf;
@@ -253,11 +255,15 @@ class VoronoiNullEvent extends VoronoiEvent {
 
 class VoronoiSite {
   Vector2 pos;
+  HalfEdge edge;
+  Face face;
 
   get x => pos.x;
   get y => pos.y;
 
-  VoronoiSite(this.pos);
+  VoronoiSite(this.pos, DoublyConnectedEdgeList d) {
+    this.face = d.newFace(this.pos);
+  }
 
   bool operator ==(Object other) => other is VoronoiSite && other.x == this.x && other.y == this.y;
 

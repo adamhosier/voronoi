@@ -11,6 +11,14 @@ main() {
       expect(v.faces.length, equals(pts.length));
     });
 
+    test("Each face has an associated edge", () {
+      List<Vector2> pts = [new Vector2(100.0, 100.0), new Vector2(105.0, 200.0), new Vector2(150.0, 130.0), new Vector2(85.0, 287.0), new Vector2(153.0, 321.0)];
+      Voronoi v = new Voronoi(pts, new Rectangle(0.0,0.0,500.0,500.0));
+      v.faces.forEach((Face f) {
+        expect(f.edge, isNotNull);
+      });
+    });
+
     test("All edges form a loop", () {
       List<Vector2> pts = [new Vector2(100.0, 100.0), new Vector2(105.0, 200.0), new Vector2(150.0, 130.0), new Vector2(85.0, 287.0), new Vector2(153.0, 321.0)];
       Voronoi v = new Voronoi(pts, new Rectangle(0.0,0.0,500.0,500.0));
@@ -23,6 +31,7 @@ main() {
         expect(next, equals(e));
       }
     });
+
   });
 
   group("Edge cases", () {

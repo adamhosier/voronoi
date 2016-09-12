@@ -1,28 +1,27 @@
 import 'package:test/test.dart';
 import 'package:vor/structs/leafedTree.dart';
-import 'dart:math';
 
 main() {
 
   group("Queue size", () {
     test("Newly created tree is empty", () {
-      LeafedTree q = new LeafedTree();
-      expect(q.isEmpty, isTrue);
-      expect(q.isNotEmpty, isFalse);
+      LeafedTree t = new LeafedTree();
+      expect(t.isEmpty, isTrue);
+      expect(t.isNotEmpty, isFalse);
     });
 
     test("Populated queue is not empty", () {
-      LeafedTree q = new LeafedTree();
-      q.root = new TestLeaf(0.0);
-      expect(q.isEmpty, isFalse);
-      expect(q.isNotEmpty, isTrue);
+      LeafedTree t = new LeafedTree();
+      t.root = new TestLeaf(0.0);
+      expect(t.isEmpty, isFalse);
+      expect(t.isNotEmpty, isTrue);
     });
 
     test("Cleared list is empty", () {
-      LeafedTree q = new LeafedTree();
-      q.root = new TestLeaf(0.0);
-      q.clear();
-      expect(q.isEmpty, isTrue);
+      LeafedTree t = new LeafedTree();
+      t.root = new TestLeaf(0.0);
+      t.clear();
+      expect(t.isEmpty, isTrue);
     });
   });
 

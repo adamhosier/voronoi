@@ -65,4 +65,13 @@ main() {
       });
     });
   });
+
+  group("Random generation is consistent", () {
+    test("1000 points with seed 123", () {
+      Rectangle rect = new Rectangle(0, 0, 500, 500);
+      List<Vector2> pts1 = new PoissonDiskSampler.withRng(rect, new Random(123)).generatePoints(1000);
+      List<Vector2> pts2 = new PoissonDiskSampler.withRng(rect, new Random(123)).generatePoints(1000);
+      expect(pts1, equals(pts2));
+    });
+  });
 }

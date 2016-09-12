@@ -4,7 +4,20 @@ class DoublyConnectedEdgeList {
   List<Vertex> vertices = new List();
   List<HalfEdge> edges = new List();
 
-  List<Face> get faces => []; //TODO
+  Map<Vector2, Face> _faces = new Map();
+  List<Face> get faces => _faces.values.toList();
+
+  Face newFace(Vector2 center) {
+    Face face = new Face(center);
+    _faces[center] = face;
+    return face;
+  }
+
+  Face newFaceWithEdge(Vector2 center, HalfEdge edge) {
+    Face face = newFace(center);
+    face.edge = edge;
+    return face;
+  }
 
   HalfEdge newEdge() {
     HalfEdge edge = new HalfEdge();
@@ -16,6 +29,19 @@ class DoublyConnectedEdgeList {
   HalfEdge newTwinEdge(HalfEdge twin) {
     HalfEdge edge = newEdge();
     edge.twin = twin;
+    return edge;
+  }
+
+
+  HalfEdge newEdgeForFace(Face face) {
+    HalfEdge edge = newEdge();
+    face.edge = edge;
+    return edge;
+  }
+
+  HalfEdge newTwinEdgeForFace(HalfEdge twin, Face face) {
+    HalfEdge edge = newTwinEdge(twin);
+    face.edge = edge;
     return edge;
   }
 
@@ -47,7 +73,9 @@ class DoublyConnectedEdgeList {
     do {
       HalfEdge curr = start;
       // find loose edge
-      while (curr.next != null) curr = curr.next;
+      while (curr.next != null) {
+        curr = curr.next;
+      }
 
       HalfEdge e1 = newEdge();
       HalfEdge e2 = newTwinEdge(e1);
@@ -69,7 +97,7 @@ class DoublyConnectedEdgeList {
                 newVertex(new Vector2(start.start.x, curr.end.y));
         e2.o = cornerVertex;
         e3.o = cornerVertex;
-      } else {
+      } else { // non corner case
         e2.o = start.o;
 
         // set pointers between them
@@ -115,9 +143,10 @@ class HalfEdge {
 }
 
 class Face {
+  Vector2 center;
   HalfEdge edge;
 
-  Face(this.edge);
+  Face(this.center);
 }
 
 class Vertex {

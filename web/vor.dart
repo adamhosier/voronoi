@@ -28,7 +28,6 @@ main() {
   c.height = window.innerHeight;
   int padding = 50;
   box = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
-
   v = getVoronoi();
 
   draw(v);
@@ -80,6 +79,7 @@ draw(Voronoi v) {
     ctx.fill();
   });
 
+  /*
   //voronoi edges
   ctx.strokeStyle = "#00F";
   v.edges.forEach((HalfEdge e) {
@@ -93,5 +93,31 @@ draw(Voronoi v) {
       ctx.stroke();
       e = e.next;
     }
+  });
+  */
+
+  // faces
+  ctx.strokeStyle = "#00F";
+  v.faces.forEach((Face f) {
+    if(f.edge == null) return;
+    int countdown = 20;
+    HalfEdge start = f.edge;
+    HalfEdge curr = start;
+    do {
+      countdown--;
+
+      double amt = 1.8;
+      Vector2 diffs = f.center - curr.start;
+      Vector2 diffe = f.center - curr.end;
+      Vector2 start = f.center - diffs * ((diffs.magnitude - amt) / diffs.magnitude);
+      Vector2 end = f.center - diffe * ((diffe.magnitude - amt) / diffe.magnitude);
+      //Vector2 start = curr.start;
+      //Vector2 end = curr.end;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      curr = curr?.next;
+    } while(curr != null && curr != start && countdown > 0);
   });
 }
