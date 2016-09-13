@@ -7,6 +7,35 @@ class DoublyConnectedEdgeList {
   Map<Vector2, Face> _faces = new Map();
   List<Face> get faces => _faces.values.toList();
 
+  static DoublyConnectedEdgeList fromRectangle(Rectangle r, Vector2 center) {
+    DoublyConnectedEdgeList d = new DoublyConnectedEdgeList();
+    HalfEdge top = d.newFullEdge();
+    HalfEdge left = d.newFullEdge();
+    HalfEdge bottom = d.newFullEdge();
+    HalfEdge right = d.newFullEdge();
+    top.next = right;
+    right.next = bottom;
+    bottom.next = left;
+    left.next = top;
+
+    top.twin.next = left.twin;
+    left.twin.next = bottom.twin;
+    bottom.twin.next = right.twin;
+    right.twin.next = top.twin;
+
+    d.newFaceWithEdge(center, top);
+    Vertex tl = d.newVertex(new Vector2.fromPoint(r.topLeft));
+    Vertex tr = d.newVertex(new Vector2.fromPoint(r.topRight));
+    Vertex bl = d.newVertex(new Vector2.fromPoint(r.bottomLeft));
+    Vertex br = d.newVertex(new Vector2.fromPoint(r.bottomRight));
+
+    top.o = tl; top.twin.o = tr;
+    left.o = bl; left.twin.o = tl;
+    bottom.o = br; bottom.twin.o = bl;
+    right.o = tr; right.twin.o = br;
+    return d;
+  }
+
   Face newFace(Vector2 center) {
     Face face = new Face(center);
     _faces[center] = face;
@@ -29,6 +58,13 @@ class DoublyConnectedEdgeList {
   HalfEdge newTwinEdge(HalfEdge twin) {
     HalfEdge edge = newEdge();
     edge.twin = twin;
+    return edge;
+  }
+
+  // creates a half edge with its twin attached
+  HalfEdge newFullEdge() {
+    HalfEdge edge = newEdge();
+    edge.twin = newEdge();
     return edge;
   }
 
@@ -60,6 +96,14 @@ class DoublyConnectedEdgeList {
   }
 
   void bindTo(Rectangle boundingBox) {
+    if(edges.length == 0) {
+      DoublyConnectedEdgeList d = DoublyConnectedEdgeList.fromRectangle(boundingBox, faces.first.center);
+      edges = d.edges;
+      vertices = d.vertices;
+      _faces = d._faces;
+      return;
+    }
+
     // trim edges
     Clipper c = new Clipper(boundingBox);
     edges.removeWhere((HalfEdge e) => c.isOutside(e.start, e.end));
@@ -97,6 +141,9 @@ class DoublyConnectedEdgeList {
                 newVertex(new Vector2(start.start.x, curr.end.y));
         e2.o = cornerVertex;
         e3.o = cornerVertex;
+        e4.next = e2;
+        e4.prev = prev;
+        prev = e2;
       } else { // non corner case
         e2.o = start.o;
 
@@ -106,7 +153,6 @@ class DoublyConnectedEdgeList {
         e2.prev = prev;
         prev = e2;
       }
-
       start = curr.twin;
     } while (start != end);
   }
@@ -140,6 +186,13 @@ class HalfEdge {
     this._twin = t;
     t._twin = this;
   }
+
+  // tests is point [v] lies above this half edge
+  // assumes edge is left to right
+  bool pointLiesAbove(Vector2 v) {
+    double m = (start.y - end.y) / (start.x - end.x);
+    return v.y > m*v.x + start.y - m*start.x;
+  }
 }
 
 class Face {
@@ -152,6 +205,9 @@ class Face {
 class Vertex {
   Vector2 p;
   HalfEdge e;
+
+  double get x => p.x;
+  double get y => p.y;
 
   Vertex(this.p);
 }

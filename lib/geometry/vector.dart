@@ -6,7 +6,10 @@ class Vector2 {
   static Vector2 Zero = new Vector2(0.0,0.0);
 
   Vector2(this.x, this.y);
-  Vector2.fromPoint(Point p) : super() {}
+  Vector2.fromPoint(Point p) {
+    this.x = p.x;
+    this.y = p.y;
+  }
 
   Vector2 operator +(Object other) => other is Vector2 ? new Vector2(x + other.x, y + other.y) : new Vector2(x + other, y + other);
   Vector2 operator -(Object other) => other is Vector2 ? new Vector2(x - other.x, y - other.y) : new Vector2(x + other, y + other);

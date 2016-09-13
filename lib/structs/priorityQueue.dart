@@ -1,5 +1,3 @@
-library pq;
-
 class PriorityQueue<E extends Comparable> {
 
   List<E> data = new List<E>();

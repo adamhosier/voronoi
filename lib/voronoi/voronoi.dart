@@ -7,6 +7,7 @@ import 'package:vor/structs/leafedTree.dart';
 
 part "doublyConnectedEdgeList.dart";
 part "beachLine.dart";
+part "trapezoidalMap.dart";
 
 class Voronoi {
 
@@ -15,22 +16,20 @@ class Voronoi {
   PriorityQueue<VoronoiEvent> _queue;
   BeachLine _beach;
   DoublyConnectedEdgeList _d;
+  TrapezoidalMap _t;
+
   List<VoronoiSite> _sites;
-  List<Circle> circles;
+  List<Circle> _circles;
 
   double sweep = 0.0;
 
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
   List<Vector2> get vertices => _d.vertices.map((Vertex v) => v.p).toList();
   List<HalfEdge> get edges => _d.edges;
-  List<Vector2> get beachBreakpoints => _beach.getBreakpoints(sweep);
   List<Face> get faces => _d.faces;
   DoublyConnectedEdgeList get dcel => _d;
 
   Rectangle<double> boundingBox;
-
-  PriorityQueue<VoronoiEvent> get q => _queue;
-  BeachLine get t => _beach;
 
   Voronoi(List<Vector2> pts, this.boundingBox, {start : true}) {
     if(pts.length == 0) throw new ArgumentError("Voronoi diagram must contain at least 1 site");
@@ -38,9 +37,10 @@ class Voronoi {
     // init structures
     _queue = new PriorityQueue();
     _beach = new BeachLine();
+    _t = new TrapezoidalMap(boundingBox);
     _d = new DoublyConnectedEdgeList();
     _sites = pts.map((Vector2 pt) => new VoronoiSite(pt, _d)).toList();
-    circles = new List();
+    _circles = new List();
 
     // add each point to event queue based on y coord
     _sites.forEach((VoronoiSite s) => _queue.push(new VoronoiSiteEvent(s)));
@@ -49,12 +49,18 @@ class Voronoi {
     if(start) generate();
   }
 
-  // Processes all events, then cleans up after itself
+  // uses the trapezoidal map to find the face containing point p in log(n) time
+  void getFaceContainingPoint(Vector2 p) {
+
+  }
+
+  // Processes all events, then clean up and builds the proximity search
   void generate() {
     while(_queue.isNotEmpty) {
       nextEvent();
     }
     _clean();
+    _t.addAll(_d.edges); // build trapezoidal map
   }
 
   // Cleans up the diagram, adding a bounding box and removing redundant vertices/halfedges
@@ -81,7 +87,6 @@ class Voronoi {
       _handleEvent(_queue.pop);
     }
   }
-
 
   void _handleEvent(VoronoiEvent e) {
     sweep = e.y;
@@ -194,7 +199,7 @@ class Voronoi {
   void _checkFalseAlarm(BeachLeaf leaf) {
     if(leaf.hasEvent) {
       leaf.event.isFalseAlarm = true;
-      circles.remove(leaf.event.c);
+      _circles.remove(leaf.event.c);
     }
   }
 
@@ -211,7 +216,7 @@ class Voronoi {
 
       // set the new event
       Circle cir = new Circle(o, (a.pos - o).magnitude);
-      circles.add(cir);
+      _circles.add(cir);
       VoronoiCircleEvent e = new VoronoiCircleEvent(cir);
       _queue.push(e);
       b.event = e;
