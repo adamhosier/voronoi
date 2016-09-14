@@ -18,6 +18,11 @@ class TrapezoidalMap {
     _s = new _TMapSearch(_t.getBoundingTrapezoid(_box));
   }
 
+  // finds the face associated with the trapezoid that contains p
+  Face search(Vector2 p) {
+    return _s.find(p).trapezoid.face;
+  }
+
   void add(HalfEdge e) {
     // we only want edges that go left to right
     e = (e.start.x < e.end.x) ? e : e.twin;
@@ -97,6 +102,7 @@ class TrapezoidalMap {
     es.shuffle(rng);
     es.forEach(add);
   }
+
 }
 
 class _TMapGraph {
@@ -128,6 +134,8 @@ class _Trapezoid {
   _Trapezoid lr;
   _Trapezoid ul;
   _Trapezoid ll;
+
+  Face face;
 }
 
 class _TMapSearch {

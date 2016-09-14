@@ -1,6 +1,8 @@
 part of voronoi;
 
 class DoublyConnectedEdgeList {
+  static NullFace NULL_FACE = new NullFace();
+
   List<Vertex> vertices = new List();
   List<HalfEdge> edges = new List();
 
@@ -88,12 +90,15 @@ class DoublyConnectedEdgeList {
   }
 
   void removeEdge(HalfEdge e) {
+    e.next?.prev = null;
+    e.prev?.next = null;
     edges.remove(e);
   }
 
   void removeVertex(Vertex v) {
     vertices.remove(v);
   }
+
 
   void bindTo(Rectangle boundingBox) {
     if(edges.length == 0) {
@@ -106,7 +111,7 @@ class DoublyConnectedEdgeList {
 
     // trim edges
     Clipper c = new Clipper(boundingBox);
-    edges.removeWhere((HalfEdge e) => c.isOutside(e.start, e.end));
+    new List.from(edges.where((HalfEdge e) => c.isOutside(e.start, e.end)))..forEach(removeEdge);
     vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(v.p.asPoint));
     edges.forEach(c.clip);
 
@@ -123,6 +128,8 @@ class DoublyConnectedEdgeList {
 
       HalfEdge e1 = newEdge();
       HalfEdge e2 = newTwinEdge(e1);
+      e1.face = start.face;
+      e2.face = NULL_FACE;
       e1.o = curr.twin.o;
       // deal with corner cases
       if (curr.end.x != start.start.x && curr.end.y != start.start.y) {
@@ -130,6 +137,8 @@ class DoublyConnectedEdgeList {
         HalfEdge e4 = newTwinEdge(e3);
         e1.next = e3;
         e3.next = start;
+        e3.face = start.face;
+        e4.face = NULL_FACE;
         e4.o = start.o;
         curr.next = e1;
         Vertex cornerVertex = (curr.end.x > start.start.x) ?
@@ -152,19 +161,25 @@ class DoublyConnectedEdgeList {
         e1.next = start;
         e2.prev = prev;
         prev = e2;
+
       }
       start = curr.twin;
     } while (start != end);
   }
-
 }
 
 class HalfEdge {
   Vertex o; //origin
   HalfEdge _twin;
-  Face face;
+  Face _face;
   HalfEdge _next;
   HalfEdge _prev;
+
+  Face get face => _face;
+  void set face(Face f) {
+    _face = f;
+    f._edge = this;
+  }
 
   Vector2 get start => o?.p;
   Vector2 get end => twin?.o?.p;
@@ -196,10 +211,48 @@ class HalfEdge {
 }
 
 class Face {
+  // assume faces with more edges than this are infinite
+  static int _EDGE_SIZE_LIMIT = 100;
+
   Vector2 center;
-  HalfEdge edge;
+  HalfEdge _edge;
+
+  HalfEdge get edge => _edge;
+
+  void set edge(HalfEdge e) {
+    _edge = e;
+    e._face = this;
+  }
+
+  // do the edges form a loop
+  bool get isClosed {
+    HalfEdge start = _edge;
+    HalfEdge curr = start;
+    int countdown = _EDGE_SIZE_LIMIT;
+    do {
+      curr = curr.next;
+      countdown--;
+    } while(curr != null && curr != start && countdown > 0);
+
+    start = _edge;
+    curr = start;
+    countdown = _EDGE_SIZE_LIMIT;
+    do {
+      curr = curr.prev;
+      countdown--;
+    } while(curr != null && curr != start && countdown > 0);
+    return curr == start;
+  }
 
   Face(this.center);
+
+  String toString() => "Face at $center";
+}
+
+class NullFace extends Face {
+  NullFace() : super(null);
+
+  String toString() => "Null Face";
 }
 
 class Vertex {

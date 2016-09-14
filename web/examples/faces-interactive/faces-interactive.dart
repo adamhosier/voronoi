@@ -9,7 +9,9 @@ CanvasRenderingContext2D ctx;
 Voronoi v;
 Random rng = new Random();
 
-int NUM_POINTS = 500;
+int NUM_POINTS = 50;
+
+Rectangle box;
 
 main() {
   c = document.getElementById("draw");
@@ -17,34 +19,35 @@ main() {
 
   c.width = window.innerWidth;
   c.height = window.innerHeight;
-
-  // create bounding box
   int padding = 50;
-  Rectangle box = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
+  box = new Rectangle(padding, padding, c.width - 2*padding, c.height - 2*padding);
 
-  // randomly generate points
-  List<Vector2> sites = new PoissonDiskSampler(box).generatePoints(NUM_POINTS);
+  // generate initial voronoi
+  List<Vector2> pts = new PoissonDiskSampler(box).generatePoints(NUM_POINTS);
+  v = new Voronoi(pts, box);
+  draw(v, Vector2.Zero);
 
-  // compute and draw voronoi
-  v = new Voronoi(sites, box);
-  draw(v);
+  // update on mouse move
+  window.onMouseMove.listen((MouseEvent e) {
+    Vector2 mousepos = new Vector2.fromPoint(e.offset);
+    v = new Voronoi(new List.from(pts)..add(mousepos), box);
+    draw(v, mousepos);
+  });
 }
 
-
-draw(Voronoi v) {
+draw(Voronoi v, Vector2 mousepos) {
   ctx.clearRect(0, 0, c.width, c.height);
 
   //sites
   ctx.fillStyle = "#000";
-  ctx.strokeStyle = "#DDD";
   v.sites.forEach((Vector2 p) {
     ctx.beginPath();
     ctx.arc(p.x, p.y, 1.5, 0, 2 * PI);
     ctx.fill();
   });
 
-  // faces
-  ctx.strokeStyle = "#00F";
+  //faces
+  ctx.strokeStyle = "#007";
   v.faces.forEach((Face f) {
     HalfEdge start = f.edge;
     HalfEdge curr = start;

@@ -50,8 +50,8 @@ class Voronoi {
   }
 
   // uses the trapezoidal map to find the face containing point p in log(n) time
-  void getFaceContainingPoint(Vector2 p) {
-
+  Face getFaceContainingPoint(Vector2 p) {
+    return _t.search(p);
   }
 
   // Processes all events, then clean up and builds the proximity search
@@ -60,7 +60,7 @@ class Voronoi {
       nextEvent();
     }
     _clean();
-    _t.addAll(_d.edges); // build trapezoidal map
+    //_t.addAll(_d.edges); // build trapezoidal map
   }
 
   // Cleans up the diagram, adding a bounding box and removing redundant vertices/halfedges
@@ -168,29 +168,35 @@ class Voronoi {
 
     // diagram
     Vertex v = _d.newVertex(e.c.o);
-    HalfEdge e1 = _d.newEdge();
-    HalfEdge e2 = _d.newTwinEdge(e1);
+    HalfEdge edge = _d.newFullEdge();
 
     // connect structure
     if(oldLeftOfBroken) {
-      brokenNode.edge.next = e1;
-      e2.next = oldNode.edge.twin;
+      edge.face = brokenNode.edge.face;
+      edge.twin.face = oldNode.edge.twin.face;
+
+      brokenNode.edge.next = edge;
+      edge.twin.next = oldNode.edge.twin;
       oldNode.edge.next = brokenNode.edge.twin;
+
     } else {
-      oldNode.edge.next = e1;
-      e2.next = brokenNode.edge.twin;
+      edge.twin.face = brokenNode.edge.twin.face;
+      edge.face = oldNode.edge.face;
+
+      oldNode.edge.next = edge;
+      edge.twin.next = brokenNode.edge.twin;
       brokenNode.edge.next = oldNode.edge.twin;
     }
 
     // attach new edge to vertex
-    e1.o = v;
+    edge.o = v;
 
     // attach old node edges to this vertex
     oldNode.edge.twin.o = v;
     brokenNode.edge.twin.o = v;
 
     // update edge of new fixed node
-    brokenNode.edge = e1;
+    brokenNode.edge = edge;
 
     _checkTriple(leafL.leftLeaf, leafL, leafL.rightLeaf);
     _checkTriple(leafR.leftLeaf, leafR, leafR.rightLeaf);
@@ -239,7 +245,6 @@ class VoronoiSiteEvent extends VoronoiEvent {
   double get y => s.y;
 
   VoronoiSiteEvent(this.s);
-
 }
 
 class VoronoiCircleEvent extends VoronoiEvent {
@@ -271,8 +276,4 @@ class VoronoiSite {
   }
 
   bool operator ==(Object other) => other is VoronoiSite && other.x == this.x && other.y == this.y;
-
-  String toString() {
-    return "Voronoi site at ($x, $y)";
-  }
 }

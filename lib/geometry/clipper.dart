@@ -24,12 +24,10 @@ class Clipper {
     return code;
   }
 
+  // detects if the line joining p1 and p2 lays ouside the box
   bool isOutside(Vector2 p1, Vector2 p2) {
-    int o1 = getOutCode(p1);
-    int o2 = getOutCode(p2);
-    if((o1 | o2) == INSIDE) return false; // both points inside
-    else if((o1 & o2) != 0) return true; // both points share a non-visable region
-    else return false;
+    Rectangle r = new Rectangle(min(p1.x, p2.x), min(p1.y, p2.y), (p1.x - p2.x).abs(), (p1.y - p2.y).abs());
+    return !_r.containsRectangle(r) && !_r.intersects(r);
   }
 
   void clip(HalfEdge e) {
