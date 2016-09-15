@@ -76,8 +76,8 @@ class TrapezoidalMap {
       _TMapXNode newRoot = new _TMapXNode();
       _TMapXNode new2 = new _TMapXNode();
       _TMapYNode new21 = new _TMapYNode();
-      newRoot.v = e.start;
-      new2.v = e.end;
+      newRoot.v = e.o;
+      new2.v = e.twin.o;
       new21.e = e;
       var la = new _TMapLeaf(a); la.parents.add(newRoot);
       var lb = new _TMapLeaf(b); lb.parents.add(new2);
@@ -197,7 +197,7 @@ class _TMapXNode extends _TMapInternalNode {
   Vertex v;
 
   int compareTo(Vector2 p) {
-    return -v.x.compareTo(p.x);
+    return p.x.compareTo(v.x);
   }
 }
 
@@ -205,6 +205,6 @@ class _TMapYNode extends _TMapInternalNode {
   HalfEdge e;
 
   int compareTo(Vector2 p) {
-    return e.pointLiesAbove(p) ? 1 : -1;
+    return e.pointLiesAbove(p) ? -1 : 1;
   }
 }

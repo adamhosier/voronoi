@@ -5,8 +5,8 @@ class DoublyConnectedEdgeList {
 
   List<Vertex> vertices = new List();
   List<HalfEdge> edges = new List();
-
   Map<Vector2, Face> _faces = new Map();
+
   List<Face> get faces => _faces.values.toList();
 
   static DoublyConnectedEdgeList fromRectangle(Rectangle r, Vector2 center) {
@@ -36,6 +36,12 @@ class DoublyConnectedEdgeList {
     bottom.o = br; bottom.twin.o = bl;
     right.o = tr; right.twin.o = br;
     return d;
+  }
+
+  // cleans up the dcel, removing edges marked as invalid
+  void _clean() {
+    edges.removeWhere((HalfEdge e) => !e.valid);
+    vertices.removeWhere((Vertex v) => !v.valid);
   }
 
   Face newFace(Vector2 center) {
@@ -90,15 +96,14 @@ class DoublyConnectedEdgeList {
   }
 
   void removeEdge(HalfEdge e) {
-    e.next?.prev = null;
-    e.prev?.next = null;
-    edges.remove(e);
+    e?.next?.prev = null;
+    e?.prev?.next = null;
+    e?.valid = false;
   }
 
   void removeVertex(Vertex v) {
-    vertices.remove(v);
+    v?.valid = false;
   }
-
 
   void bindTo(Rectangle boundingBox) {
     if(edges.length == 0) {
@@ -113,6 +118,7 @@ class DoublyConnectedEdgeList {
     Clipper c = new Clipper(boundingBox);
     new List.from(edges.where((HalfEdge e) => c.isOutside(e.start, e.end)))..forEach(removeEdge);
     vertices.removeWhere((Vertex v) => !boundingBox.containsPoint(v.p.asPoint));
+    _clean();
     edges.forEach(c.clip);
 
     // close edges
@@ -174,6 +180,8 @@ class HalfEdge {
   Face _face;
   HalfEdge _next;
   HalfEdge _prev;
+
+  bool valid = true;
 
   Face get face => _face;
   void set face(Face f) {
@@ -258,6 +266,8 @@ class NullFace extends Face {
 class Vertex {
   Vector2 p;
   HalfEdge e;
+
+  bool valid = true;
 
   double get x => p.x;
   double get y => p.y;

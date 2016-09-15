@@ -19,8 +19,6 @@ class Voronoi {
   TrapezoidalMap _t;
 
   List<VoronoiSite> _sites;
-  List<Circle> _circles;
-
   double sweep = 0.0;
 
   List<Vector2> get sites => _sites.map((VoronoiSite s) => s.pos);
@@ -40,7 +38,6 @@ class Voronoi {
     _t = new TrapezoidalMap(boundingBox);
     _d = new DoublyConnectedEdgeList();
     _sites = pts.map((Vector2 pt) => new VoronoiSite(pt, _d)).toList();
-    _circles = new List();
 
     // add each point to event queue based on y coord
     _sites.forEach((VoronoiSite s) => _queue.push(new VoronoiSiteEvent(s)));
@@ -205,7 +202,6 @@ class Voronoi {
   void _checkFalseAlarm(BeachLeaf leaf) {
     if(leaf.hasEvent) {
       leaf.event.isFalseAlarm = true;
-      _circles.remove(leaf.event.c);
     }
   }
 
@@ -222,7 +218,6 @@ class Voronoi {
 
       // set the new event
       Circle cir = new Circle(o, (a.pos - o).magnitude);
-      _circles.add(cir);
       VoronoiCircleEvent e = new VoronoiCircleEvent(cir);
       _queue.push(e);
       b.event = e;
