@@ -31,11 +31,11 @@ class TrapezoidalMap {
     _TMapLeaf startLeaf = _s.find(e.start);
     _Trapezoid start = startLeaf.trapezoid;
     List<_Trapezoid> path = [start];
-    for(int i = 0; e.end.x > path[i].right.x; i++) {
-      if(e.pointLiesAbove(path[i].right.p)) {
-        path[i + 1] = path[i].lr;
+    for(int i = 0; path[i]?.right != null && e.end.x > path[i].right.x; i++) {
+      if (e.pointLiesAbove(path[i].right.p)) {
+        path.add(path[i].lr);
       } else {
-        path[i + 1] = path[i].ur;
+        path.add(path[i].ur);
       }
     }
 
@@ -47,10 +47,10 @@ class TrapezoidalMap {
       _Trapezoid c = new _Trapezoid();
       _Trapezoid d = new _Trapezoid();
 
-      a.ur = c; c.ll = a;
-      a.lr = d; d.ur = a;
-      b.ul = c; c.lr = b;
-      b.ll = d; d.ul = b;
+      a.ur = c; c.ll = a; c.ul = a;
+      a.lr = d; d.ul = a; d.ll = a;
+      b.ul = c; c.lr = b; c.ur = b;
+      b.ll = d; d.ur = b; d.ur = b;
 
       start.ul?.lr = a; start.ll?.ur = a;
       start.ur?.ll = b; start.lr?.ul = b;
@@ -68,14 +68,17 @@ class TrapezoidalMap {
       c.top = start.top;
       c.bottom = e;
       d.left = e.o;
-      c.right = e.twin.o;
-      c.top = e;
-      c.bottom = start.bottom;
+      d.right = e.twin.o;
+      d.top = e;
+      d.bottom = start.bottom;
 
       // update the search structure
       _TMapXNode newRoot = new _TMapXNode();
       _TMapXNode new2 = new _TMapXNode();
       _TMapYNode new21 = new _TMapYNode();
+      newRoot.v = e.start;
+      new2.v = e.end;
+      new21.e = e;
       var la = new _TMapLeaf(a); la.parents.add(newRoot);
       var lb = new _TMapLeaf(b); lb.parents.add(new2);
       var lc = new _TMapLeaf(c); lc.parents.add(new21);
@@ -87,12 +90,15 @@ class TrapezoidalMap {
       new21._1 = lc;
       new21._2 = ld;
 
-      startLeaf.parents.forEach((_TMapInternalNode parent) {
-        if(parent._1 == startLeaf) parent._1 = newRoot;
-        else parent._2 = newRoot;
-      });
+      if(startLeaf.parents.isEmpty) {
+        _s.root = newRoot;
+      } else {
+        startLeaf.parents.forEach((_TMapInternalNode parent) {
+          if(parent._1 == startLeaf) parent._1 = newRoot;
+          else parent._2 = newRoot;
+        });
+      }
     } else { //edge spans multiple trapezoids TODO
-
     }
   }
 
@@ -120,6 +126,7 @@ class _TMapGraph {
 
     t.left = t.top.o;
     t.right = t.top.twin.o;
+
     return t;
   }
 }
@@ -135,11 +142,13 @@ class _Trapezoid {
   _Trapezoid ul;
   _Trapezoid ll;
 
-  Face face;
+  Face get face => top.face;
 }
 
 class _TMapSearch {
   _TMapNode root;
+
+  int get depth => root.depth;
 
   _TMapSearch(_Trapezoid t) {
     root = new _TMapLeaf(t);
@@ -164,17 +173,22 @@ class _TMapSearch {
 }
 
 abstract class _TMapNode {
+  int get depth;
 }
 
 class _TMapLeaf extends _TMapNode {
   _Trapezoid trapezoid;
   List<_TMapInternalNode> parents = [];
 
+  int get depth => 1;
+
   _TMapLeaf(this.trapezoid);
 }
 
 abstract class _TMapInternalNode extends _TMapNode {
   _TMapNode _1, _2;
+
+  int get depth => 1 + max(_1.depth, _2.depth);
 
   int compareTo(Vector2 p);
 }
@@ -183,7 +197,7 @@ class _TMapXNode extends _TMapInternalNode {
   Vertex v;
 
   int compareTo(Vector2 p) {
-    return 1;
+    return -v.x.compareTo(p.x);
   }
 }
 
@@ -191,6 +205,6 @@ class _TMapYNode extends _TMapInternalNode {
   HalfEdge e;
 
   int compareTo(Vector2 p) {
-    return 1;
+    return e.pointLiesAbove(p) ? 1 : -1;
   }
 }

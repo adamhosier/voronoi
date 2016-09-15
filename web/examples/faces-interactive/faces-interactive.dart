@@ -51,7 +51,6 @@ draw(Voronoi v, Vector2 mousepos) {
   v.faces.forEach((Face f) {
     HalfEdge start = f.edge;
     HalfEdge curr = start;
-    int countdown = 20;
     do {
       double amt = 1.8;
       Vector2 diffs = f.center - curr.start;
@@ -64,7 +63,7 @@ draw(Voronoi v, Vector2 mousepos) {
       ctx.lineTo(end.x, end.y);
       ctx.stroke();
       curr = curr?.next;
-      countdown--;
-    } while(countdown > 0 && curr != null && curr != start);
+    } while(curr != null && curr != start);
   });
+
 }

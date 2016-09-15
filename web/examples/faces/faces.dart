@@ -48,20 +48,20 @@ draw(Voronoi v) {
   v.faces.forEach((Face f) {
     HalfEdge start = f.edge;
     HalfEdge curr = start;
-    int countdown = 20;
+
     do {
+      Vector2 begin, end;
       double amt = 1.8;
       Vector2 diffs = f.center - curr.start;
       Vector2 diffe = f.center - curr.end;
-      Vector2 start = f.center - diffs * ((diffs.magnitude - amt) / diffs.magnitude);
-      Vector2 end = f.center - diffe * ((diffe.magnitude - amt) / diffe.magnitude);
+      begin = f.center - diffs * ((diffs.magnitude - amt) / diffs.magnitude);
+      end = f.center - diffe * ((diffe.magnitude - amt) / diffe.magnitude);
 
       ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
+      ctx.moveTo(begin.x, begin.y);
       ctx.lineTo(end.x, end.y);
       ctx.stroke();
       curr = curr?.next;
-      countdown--;
-    } while(countdown > 0 && curr != null && curr != start);
+    } while(curr != null && curr != start);
   });
 }

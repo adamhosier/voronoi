@@ -60,7 +60,7 @@ class Voronoi {
       nextEvent();
     }
     _clean();
-    //_t.addAll(_d.edges); // build trapezoidal map
+    _t.addAll(_d.edges); // build trapezoidal map
   }
 
   // Cleans up the diagram, adding a bounding box and removing redundant vertices/halfedges
