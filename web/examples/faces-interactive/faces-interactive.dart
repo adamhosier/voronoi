@@ -9,7 +9,7 @@ CanvasRenderingContext2D ctx;
 Voronoi v;
 Random rng = new Random();
 
-int NUM_POINTS = 50;
+int NUM_POINTS = 20;
 
 Rectangle box;
 

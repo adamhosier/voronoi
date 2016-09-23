@@ -15,5 +15,4 @@ main() {
   int time = new DateTime.now().millisecondsSinceEpoch - startTime;
 
   print("${NUM_RUNS} Voronoi(s) with ${NUM_PTS} points took ${time / 1000} seconds to generate");
-
 }

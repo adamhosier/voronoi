@@ -1,6 +1,6 @@
 // Implementation of the trapezoidal map structure and algorithm
 //   to work in conjunction with doublyConnectedEdgeList.dart
-// Described at http://cgm.cs.mcgill.ca/~athens/cs507/Projects/2002/JukkaKaartinen/
+// Described by Mark de Berg (Computational Geometry third edition)
 // Adam Hosier 2016
 
 part of voronoi;
@@ -32,7 +32,7 @@ class TrapezoidalMap {
     _Trapezoid start = startLeaf.trapezoid;
     List<_Trapezoid> path = [start];
     for(int i = 0; path[i]?.right != null && e.end.x > path[i].right.x; i++) {
-      if (e.pointLiesAbove(path[i].right.p)) {
+      if(e.pointLiesAbove(path[i].right.p)) {
         path.add(path[i].lr);
       } else {
         path.add(path[i].ur);
@@ -98,7 +98,112 @@ class TrapezoidalMap {
           else parent._2 = newRoot;
         });
       }
-    } else { //edge spans multiple trapezoids TODO
+    } else { //edge spans multiple trapezoids
+      _Trapezoid prevUpper, prevLower;
+      path.forEach((_Trapezoid trap) {
+        if(trap == path.first) {
+          // trap map
+          _Trapezoid a = new _Trapezoid();
+          _Trapezoid b = new _Trapezoid();
+          _Trapezoid c = new _Trapezoid();
+
+          a.ul = trap.ul; a.ll = trap.ll; a.ur = b; trap.lr = c;
+          b.ul = a; b.ll = a;
+          c.ul = a; c.ll = a;
+          trap.ul?.lr = a; trap.ul?.ur = a; trap.ll?.lr = a; trap.ll?.ur = a;
+
+          a.left = trap.left; a.right = e.o; a.top = trap.top; a.bottom = trap.bottom;
+          b.left = e.o; b.right = trap.right; b.top = trap.top; b.bottom = e;
+          c.left = e.o; c.right = trap.right; c.top = e; c.bottom = trap.bottom;// TODO maybe an issue here as new traps might not have right points
+
+          // search structure
+          _TMapLeaf la = new _TMapLeaf(a);
+          _TMapLeaf lb = new _TMapLeaf(b);
+          _TMapLeaf lc = new _TMapLeaf(c);
+          _TMapXNode newRoot = new _TMapXNode();
+          _TMapYNode new2 = new _TMapYNode();
+          newRoot._1 = la;
+          newRoot._2 = new2;
+          new2._1 = lb;
+          new2._2 = lc;
+          trap.leaf.parents.forEach((_TMapInternalNode parent) {
+            if(parent._1 == trap.leaf) parent._1 = newRoot;
+            else parent._2 = newRoot;
+          });
+
+          prevUpper = b;
+          prevLower = c;
+        } else if(trap == path.last) {
+          // trap map
+          _Trapezoid a = new _Trapezoid();
+          _Trapezoid b = new _Trapezoid();
+          _Trapezoid c = new _Trapezoid();
+
+          a.ul = prevUpper; a.ll = prevUpper; a.ur = c; a.lr = c;
+          b.ul = prevLower; b.ll = prevLower; a.ur = c; a.lr = c;
+          c.ul = a; c.ll = b; c.ur = trap.ur; c.ul = trap.lr;
+          prevUpper.ur = a; prevUpper.lr = a;
+          prevLower.ur = b; prevLower.lr = b;
+
+          trap.ur?.ll = c; trap.ur?.ul = c; trap.lr?.ll = c; trap.lr?.ul = c;
+
+          a.left = trap.left; a.right = e.twin.o; a.top = trap.top; a.bottom = e;
+          b.left = trap.left; b.right = e.twin.o; b.top = e; b.bottom = trap.bottom;
+          c.left = e.twin.o; c.right = trap.right; c.top = trap.top; c.bottom = trap.bottom;
+
+          // search structure
+          _TMapLeaf la = new _TMapLeaf(a);
+          _TMapLeaf lb = new _TMapLeaf(b);
+          _TMapLeaf lc = new _TMapLeaf(c);
+          _TMapXNode newRoot = new _TMapXNode();
+          _TMapYNode new1 = new _TMapYNode();
+          newRoot._1 = new1;
+          newRoot._2 = lc;
+          new1._1 = la;
+          new1._2 = lb;
+
+          trap.leaf.parents.forEach((_TMapInternalNode parent) {
+            if(parent._1 == trap.leaf) parent._1 = newRoot;
+            else parent._2 = newRoot;
+          });
+        } else {
+          _Trapezoid a = new _Trapezoid();
+          _Trapezoid b = new _Trapezoid();
+
+          a.ul = prevUpper; a.ll = prevUpper;
+          b.ul = prevLower; b.ll = prevLower;
+          prevUpper.ur = a; prevUpper.lr = a;
+          prevLower.ur = b; prevLower.lr = b;
+
+          a.left = trap.left; a.right = trap.right; a.top = trap.top; a.bottom = e;
+          b.left = trap.left; b.right = trap.right; b.top = e; b.bottom = trap.bottom;
+
+          // search structure
+          _TMapLeaf la = new _TMapLeaf(a);
+          _TMapLeaf lb = new _TMapLeaf(b);
+          _TMapYNode newRoot = new _TMapYNode();
+          newRoot._1 = la;
+          newRoot._2 = lb;
+          trap.leaf.parents.forEach((_TMapInternalNode parent) {
+            if(parent._1 == trap.leaf) parent._1 = newRoot;
+            else parent._2 = newRoot;
+          });
+
+          // merge
+          if(!e.pointLiesAbove(a.left.p)) {
+            print("CAN MERGE");
+          }
+          if(e.pointLiesAbove(b.left.p)) {
+
+          }
+
+          prevUpper = a;
+          prevLower = b;
+        }
+      });
+
+      // merge
+
     }
   }
 
@@ -142,6 +247,8 @@ class _Trapezoid {
   _Trapezoid ul;
   _Trapezoid ll;
 
+  _TMapLeaf leaf;
+
   Face get face => top.face;
 }
 
@@ -182,7 +289,9 @@ class _TMapLeaf extends _TMapNode {
 
   int get depth => 1;
 
-  _TMapLeaf(this.trapezoid);
+  _TMapLeaf(this.trapezoid) {
+    trapezoid.leaf = this;
+  }
 }
 
 abstract class _TMapInternalNode extends _TMapNode {
